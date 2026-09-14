@@ -130,6 +130,17 @@ button:disabled {
   opacity: 0.55;
 }
 
+button.secondary {
+  border: 1px solid #b8c5b4;
+  background: #fff;
+  color: #355e3b;
+}
+
+button.small {
+  padding: 7px 10px;
+  font-size: 0.85rem;
+}
+
 .errors {
   margin-top: 22px;
   padding: 16px 18px;
@@ -291,6 +302,95 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.agenda-card {
+  display: grid;
+  gap: 22px;
+}
+
+.agenda-card h2,
+.agenda-card h3,
+.agenda-card p {
+  margin-bottom: 0;
+}
+
+.agenda-intro {
+  line-height: 1.5;
+}
+
+.agenda-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.meeting-items-section {
+  padding: 20px;
+  border: 1px solid #d9e2d5;
+  border-radius: 10px;
+  background: #f8faf7;
+}
+
+.agenda-list {
+  display: grid;
+  gap: 9px;
+}
+
+.agenda-item-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.agenda-item-editable {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.agenda-number {
+  color: #52606d;
+  font-weight: 800;
+  text-align: right;
+}
+
+.agenda-item-actions,
+.agenda-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agenda-actions {
+  padding-top: 4px;
+}
+
+.remove-button {
+  color: #8b2f2f !important;
+}
+
+.agenda-preview .agenda-heading {
+  margin-bottom: 22px;
+  color: #52606d;
+  font-weight: 700;
+}
+
+.agenda-preview ol {
+  margin: 0;
+  padding-left: 28px;
+}
+
+.agenda-preview li {
+  margin-bottom: 10px;
+  padding-left: 4px;
+  line-height: 1.45;
+}
+
+.agenda-preview .agenda-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
 @media (max-width: 580px) {
   .page {
     padding-top: 32px;
@@ -307,5 +407,13 @@ button:disabled {
   .attendee {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .agenda-item-editable {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .agenda-item-editable .agenda-item-actions {
+    grid-column: 2;
   }
 }
