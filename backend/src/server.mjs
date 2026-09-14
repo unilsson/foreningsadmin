@@ -3,6 +3,8 @@ import { loadConfig } from "./config/load-config.mjs";
 import { loadBoard } from "./config/load-board.mjs";
 import { createMeetingPreview } from "./meetings/preview.mjs";
 import { renderTemplate } from "./templates/render.mjs";
+import { createAgendaPreview, loadAgendaTemplate } from "./agenda/agenda.mjs";
+import { streamAgendaPdf } from "./agenda/pdf.mjs";
 import {
   clearGoogleToken,
   consumeOAuthState,
@@ -26,6 +28,7 @@ const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const config = await loadConfig();
 const board = await loadBoard();
+const agendaTemplate = await loadAgendaTemplate();
 
 app.use(express.json());
 
@@ -39,6 +42,57 @@ app.get("/api/config", (_req, res) => {
 
 app.get("/api/board", (_req, res) => {
   res.json(board);
+});
+
+app.get("/api/agenda/template", (_req, res) => {
+  res.json(agendaTemplate);
+});
+
+app.post("/api/agenda/preview", (req, res) => {
+  const meetingResult = createMeetingPreview(req.body?.meeting, config);
+
+  if (!meetingResult.ok) {
+    return res.status(400).json(meetingResult);
+  }
+
+  try {
+    const agenda = createAgendaPreview({
+      meeting: meetingResult.meeting,
+      agenda: req.body?.agenda,
+      template: agendaTemplate
+    });
+
+    res.json({ ok: true, agenda });
+  } catch (error) {
+    res.status(400).json({ ok: false, errors: [error.message] });
+  }
+});
+
+app.post("/api/agenda/pdf", (req, res) => {
+  const meetingResult = createMeetingPreview(req.body?.meeting, config);
+
+  if (!meetingResult.ok) {
+    return res.status(400).json(meetingResult);
+  }
+
+  try {
+    const agenda = createAgendaPreview({
+      meeting: meetingResult.meeting,
+      agenda: req.body?.agenda,
+      template: agendaTemplate
+    });
+
+    const filename = `dagordning-${meetingResult.meeting.date}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    streamAgendaPdf(res, agenda);
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(400).json({ ok: false, errors: [error.message] });
+    } else {
+      res.end();
+    }
+  }
 });
 
 app.get("/api/google/status", async (_req, res) => {

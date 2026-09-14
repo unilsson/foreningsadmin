@@ -8,6 +8,7 @@
     "start": "node --env-file-if-exists=../.env src/server.mjs"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pdfkit": "^0.20.2"
   }
 }
