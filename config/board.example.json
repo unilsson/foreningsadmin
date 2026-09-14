@@ -1,0 +1,10 @@
+{
+  "members": [
+    {
+      "name": "Roger Skalleberg",
+      "email": "Roger.Skalleberg@example.com",
+      "role": "Ordförande",
+      "active": true
+    }
+  ]
+}

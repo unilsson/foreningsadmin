@@ -1,0 +1,9 @@
+Styrelsemöte för Haninge Hembygdsgille.
+
+Om du inte kan komma så meddela gärna ordförande Ulf Nilsson om detta.
+
+Datum: {{date}}
+Tid: {{startTime}}–{{endTime}}
+Plats: {{location}}
+
+Handlingar och eventuell ytterligare information skickas via styrelsens e-postlista.

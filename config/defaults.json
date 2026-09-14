@@ -1,0 +1,11 @@
+{
+  "organisation": {
+    "name": "Haninge Hembygdsgille"
+  },
+  "meeting": {
+    "title": "Styrelsemöte",
+    "startTime": "18:30",
+    "endTime": "20:30",
+    "location": "Tingshussalen"
+  }
+}
