@@ -291,6 +291,39 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
+  async function downloadAgendaPdf() {
+    setErrors([]);
+
+    try {
+      const response = await fetch("/api/agenda/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meeting: form,
+          agenda: agendaDraft
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setErrors(data.errors ?? ["Kunde inte skapa PDF-filen."]);
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `dagordning-${form.date || "styrelsemote"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setErrors(["Kunde inte skapa PDF-filen."]);
+    }
+  }
+
   const beforeCount = agendaDraft.beforeMeetingItems.length;
   const meetingCount = agendaDraft.meetingItems.length;
 
@@ -512,6 +545,9 @@ export default function App() {
           <div className="agenda-actions">
             <button type="button" onClick={downloadAgenda}>
               Hämta som Markdown
+            </button>
+            <button type="button" className="secondary" onClick={downloadAgendaPdf}>
+              Hämta som PDF
             </button>
           </div>
         </section>
