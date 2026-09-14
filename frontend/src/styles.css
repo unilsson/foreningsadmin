@@ -15,7 +15,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -91,7 +92,8 @@ label {
   font-weight: 700;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 11px 12px;
   border: 1px solid #b8c5b4;
@@ -99,12 +101,14 @@ input {
   background: #fff;
 }
 
-input:focus {
+input:focus,
+select:focus {
   outline: 2px solid #355e3b;
   outline-offset: 2px;
 }
 
-button {
+button,
+.button-link {
   justify-self: start;
   padding: 11px 18px;
   border: 0;
@@ -113,10 +117,17 @@ button {
   color: white;
   font-weight: 800;
   cursor: pointer;
+  text-decoration: none;
 }
 
-button:hover {
+button:hover,
+.button-link:hover {
   filter: brightness(0.95);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .errors {
@@ -155,20 +166,6 @@ button:hover {
   padding-top: 18px;
   border-top: 1px solid #e5e7eb;
   color: #52606d;
-}
-
-@media (max-width: 580px) {
-  .page {
-    padding-top: 32px;
-  }
-
-  .row {
-    grid-template-columns: 1fr;
-  }
-
-  .card {
-    padding: 22px;
-  }
 }
 
 .calendar-text {
@@ -242,20 +239,73 @@ button:hover {
   color: #52606d;
 }
 
-.attendee a {
+.attendee a,
+.success-box a {
   color: #355e3b;
   text-decoration: none;
   overflow-wrap: anywhere;
 }
 
-.attendee a:hover {
+.attendee a:hover,
+.success-box a:hover {
   text-decoration: underline;
 }
 
+.google-card {
+  display: grid;
+  gap: 16px;
+}
+
+.google-card h2,
+.google-card p {
+  margin-bottom: 0;
+}
+
+.google-message {
+  margin-top: 4px;
+  color: #355e3b;
+  font-weight: 700;
+}
+
+.send-area {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.send-area p {
+  margin-bottom: 0;
+}
+
+.success-box {
+  padding: 16px 18px;
+  border: 1px solid #b8c5b4;
+  border-radius: 8px;
+  background: #f4f8f2;
+}
+
+.success-box p {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
 @media (max-width: 580px) {
+  .page {
+    padding-top: 32px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
   .attendee {
     align-items: flex-start;
     flex-direction: column;
   }
 }
-
