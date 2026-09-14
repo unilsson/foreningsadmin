@@ -7,6 +7,13 @@ const emptyForm = {
   location: ""
 };
 
+const emptyAgenda = {
+  title: "",
+  beforeMeetingItems: [],
+  meetingItems: [],
+  afterMeetingItems: []
+};
+
 export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [preview, setPreview] = useState(null);
@@ -19,6 +26,9 @@ export default function App() {
   const [googleMessage, setGoogleMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [createdEvent, setCreatedEvent] = useState(null);
+  const [agendaTemplate, setAgendaTemplate] = useState(null);
+  const [agendaDraft, setAgendaDraft] = useState(emptyAgenda);
+  const [agendaPreview, setAgendaPreview] = useState(null);
 
   async function refreshGoogleStatus() {
     try {
@@ -45,13 +55,15 @@ export default function App() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        const [healthResponse, configResponse] = await Promise.all([
+        const [healthResponse, configResponse, agendaResponse] = await Promise.all([
           fetch("/api/health"),
-          fetch("/api/config")
+          fetch("/api/config"),
+          fetch("/api/agenda/template")
         ]);
 
         const health = await healthResponse.json();
         const config = await configResponse.json();
+        const agenda = await agendaResponse.json();
 
         setBackendOk(Boolean(health.ok));
         setOrganisationName(config.organisation?.name ?? "Förening");
@@ -62,6 +74,14 @@ export default function App() {
           endTime: config.meeting?.endTime ?? "",
           location: config.meeting?.location ?? ""
         }));
+
+        setAgendaTemplate(agenda);
+        setAgendaDraft({
+          title: agenda.title ?? "Dagordning",
+          beforeMeetingItems: agenda.beforeMeetingItems ?? [],
+          meetingItems: [],
+          afterMeetingItems: agenda.afterMeetingItems ?? []
+        });
       } catch {
         setBackendOk(false);
       }
@@ -89,6 +109,9 @@ export default function App() {
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
+    setPreview(null);
+    setAgendaPreview(null);
+    setCreatedEvent(null);
   }
 
   async function handleSubmit(event) {
@@ -167,13 +190,117 @@ export default function App() {
     }
   }
 
+  function updateAgendaTitle(event) {
+    setAgendaDraft((current) => ({ ...current, title: event.target.value }));
+    setAgendaPreview(null);
+  }
+
+  function updateAgendaItem(section, index, value) {
+    setAgendaDraft((current) => ({
+      ...current,
+      [section]: current[section].map((item, itemIndex) =>
+        itemIndex === index ? value : item
+      )
+    }));
+    setAgendaPreview(null);
+  }
+
+  function addMeetingItem() {
+    setAgendaDraft((current) => ({
+      ...current,
+      meetingItems: [...current.meetingItems, ""]
+    }));
+    setAgendaPreview(null);
+  }
+
+  function removeMeetingItem(index) {
+    setAgendaDraft((current) => ({
+      ...current,
+      meetingItems: current.meetingItems.filter((_, itemIndex) => itemIndex !== index)
+    }));
+    setAgendaPreview(null);
+  }
+
+  function moveMeetingItem(index, direction) {
+    setAgendaDraft((current) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= current.meetingItems.length) return current;
+
+      const meetingItems = [...current.meetingItems];
+      [meetingItems[index], meetingItems[targetIndex]] = [
+        meetingItems[targetIndex],
+        meetingItems[index]
+      ];
+
+      return { ...current, meetingItems };
+    });
+    setAgendaPreview(null);
+  }
+
+  function resetStandardAgenda() {
+    if (!agendaTemplate) return;
+
+    setAgendaDraft((current) => ({
+      ...current,
+      title: agendaTemplate.title,
+      beforeMeetingItems: [...agendaTemplate.beforeMeetingItems],
+      afterMeetingItems: [...agendaTemplate.afterMeetingItems]
+    }));
+    setAgendaPreview(null);
+  }
+
+  async function createAgenda() {
+    setErrors([]);
+    setAgendaPreview(null);
+
+    try {
+      const response = await fetch("/api/agenda/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meeting: form,
+          agenda: agendaDraft
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setErrors(data.errors ?? ["Kunde inte skapa dagordningen."]);
+        return;
+      }
+
+      setAgendaPreview(data.agenda);
+    } catch {
+      setErrors(["Kunde inte kontakta backend."]);
+    }
+  }
+
+  function downloadAgenda() {
+    if (!agendaPreview?.markdown) return;
+
+    const blob = new Blob([agendaPreview.markdown], {
+      type: "text/markdown;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `dagordning-${form.date || "styrelsemote"}.md`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const beforeCount = agendaDraft.beforeMeetingItems.length;
+  const meetingCount = agendaDraft.meetingItems.length;
+
   return (
     <main className="page">
       <header className="header">
         <p className="eyebrow">{organisationName}</p>
         <h1>Föreningsadmin</h1>
         <p className="subtitle">
-          Skapa, förhandsgranska och skicka styrelsemöten via Google Calendar.
+          Skapa kalenderinbjudan och dagordning för styrelsemöten.
         </p>
       </header>
 
@@ -248,7 +375,7 @@ export default function App() {
             <input type="text" name="location" value={form.location} onChange={updateField} required />
           </label>
 
-          <button type="submit">Förhandsgranska</button>
+          <button type="submit">Förhandsgranska möte</button>
         </form>
 
         {errors.length > 0 && (
@@ -261,9 +388,138 @@ export default function App() {
         )}
       </section>
 
+      <section className="card agenda-card">
+        <p className="eyebrow">Sprint 3</p>
+        <h2>Dagordning</h2>
+        <p className="muted agenda-intro">
+          Standardpunkterna kan ändras för just detta möte. Lägg mötesspecifika ärenden i mitten; numreringen skapas automatiskt.
+        </p>
+
+        <label>
+          Rubrik
+          <input value={agendaDraft.title} onChange={updateAgendaTitle} />
+        </label>
+
+        <div className="agenda-section">
+          <h3>Standardpunkter före mötesspecifika ärenden</h3>
+          <div className="agenda-list">
+            {agendaDraft.beforeMeetingItems.map((item, index) => (
+              <div className="agenda-item-row" key={`before-${index}`}>
+                <span className="agenda-number">{index + 1}.</span>
+                <input
+                  value={item}
+                  onChange={(event) =>
+                    updateAgendaItem("beforeMeetingItems", index, event.target.value)
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="agenda-section meeting-items-section">
+          <h3>Mötesspecifika ärenden</h3>
+          {agendaDraft.meetingItems.length === 0 ? (
+            <p className="muted">Inga mötesspecifika punkter ännu.</p>
+          ) : (
+            <div className="agenda-list">
+              {agendaDraft.meetingItems.map((item, index) => (
+                <div className="agenda-item-row agenda-item-editable" key={`meeting-${index}`}>
+                  <span className="agenda-number">{beforeCount + index + 1}.</span>
+                  <input
+                    value={item}
+                    placeholder="Skriv ärendet här"
+                    onChange={(event) =>
+                      updateAgendaItem("meetingItems", index, event.target.value)
+                    }
+                  />
+                  <div className="agenda-item-actions">
+                    <button
+                      type="button"
+                      className="secondary small"
+                      onClick={() => moveMeetingItem(index, -1)}
+                      disabled={index === 0}
+                      aria-label="Flytta upp"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary small"
+                      onClick={() => moveMeetingItem(index, 1)}
+                      disabled={index === agendaDraft.meetingItems.length - 1}
+                      aria-label="Flytta ned"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary small remove-button"
+                      onClick={() => removeMeetingItem(index)}
+                    >
+                      Ta bort
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button type="button" className="secondary" onClick={addMeetingItem}>
+            + Lägg till punkt
+          </button>
+        </div>
+
+        <div className="agenda-section">
+          <h3>Standardpunkter efter mötesspecifika ärenden</h3>
+          <div className="agenda-list">
+            {agendaDraft.afterMeetingItems.map((item, index) => (
+              <div className="agenda-item-row" key={`after-${index}`}>
+                <span className="agenda-number">{beforeCount + meetingCount + index + 1}.</span>
+                <input
+                  value={item}
+                  onChange={(event) =>
+                    updateAgendaItem("afterMeetingItems", index, event.target.value)
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="agenda-actions">
+          <button type="button" onClick={createAgenda}>
+            Förhandsgranska dagordning
+          </button>
+          <button type="button" className="secondary" onClick={resetStandardAgenda}>
+            Återställ standardpunkter
+          </button>
+        </div>
+      </section>
+
+      {agendaPreview && (
+        <section className="card agenda-preview">
+          <p className="eyebrow">Dagordningsförhandsgranskning</p>
+          <h2>{agendaPreview.title}</h2>
+          <p className="agenda-heading">{agendaPreview.heading}</p>
+
+          <ol>
+            {agendaPreview.items.map((item) => (
+              <li key={item.number}>{item.text}</li>
+            ))}
+          </ol>
+
+          <div className="agenda-actions">
+            <button type="button" onClick={downloadAgenda}>
+              Hämta som Markdown
+            </button>
+          </div>
+        </section>
+      )}
+
       {preview && (
         <section className="card preview">
-          <p className="eyebrow">Förhandsgranskning</p>
+          <p className="eyebrow">Mötesförhandsgranskning</p>
           <h2>{preview.title}</h2>
 
           <dl>
