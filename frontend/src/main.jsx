@@ -1,15 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
-import AgendaTemplateAdmin from "./AgendaTemplateAdmin.jsx";
 import "./styles.css";
 import "./admin.css";
+import "./shell.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
-    <div className="admin-page">
-      <AgendaTemplateAdmin />
-    </div>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
