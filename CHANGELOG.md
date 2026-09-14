@@ -1,5 +1,16 @@
 # Changelog
 
+## Sprint 5 – Appskal och navigation
+
+- Permanent vänstermeny på större skärmar.
+- Responsiv meny för mindre skärmar.
+- Separata routes för start, styrelsemöte, dagordning och administration.
+- Google Calendar-inställningar flyttade till en egen administrationssida.
+- Dagordningsmallen nås från en egen administrationssida.
+- Startsida med genvägar till appens viktigaste delar.
+- React Router används för bokmärkningsbara URL:er och webbläsarnavigation.
+- Navigationsstrukturen dokumenteras i `docs/navigation.md`.
+
 ## Sprint 4 – Administration och konfiguration
 
 - Dagordningens standardmall kan redigeras direkt i webbappen.

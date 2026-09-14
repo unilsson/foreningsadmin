@@ -1,0 +1,253 @@
+.app-shell {
+  min-height: 100vh;
+  background: #f4f6f3;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  display: flex;
+  width: 260px;
+  flex-direction: column;
+  padding: 24px 18px 18px;
+  border-right: 1px solid #d9e2d5;
+  background: #ffffff;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 22px;
+}
+
+.sidebar-brand > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sidebar-brand strong {
+  font-size: 1.05rem;
+}
+
+.sidebar-brand span:not(.brand-mark) {
+  overflow: hidden;
+  color: #66756e;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #355e3b;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 4px;
+}
+
+.nav-heading {
+  margin: 22px 10px 6px;
+  color: #77847e;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.nav-link {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: #33413b;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background: #f1f5ef;
+}
+
+.nav-link.active {
+  background: #e7efe4;
+  color: #25482c;
+}
+
+.sidebar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 14px 8px 4px;
+  border-top: 1px solid #e5e7eb;
+  color: #66756e;
+  font-size: 0.78rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #9aa5a0;
+}
+
+.status-dot.online {
+  background: #397a46;
+}
+
+.status-dot.offline {
+  background: #a94442;
+}
+
+.app-content {
+  min-height: 100vh;
+  margin-left: 260px;
+}
+
+.content-page {
+  width: min(920px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.page-heading {
+  margin-bottom: 28px;
+}
+
+.page-heading h1 {
+  margin-bottom: 8px;
+  font-size: clamp(2rem, 5vw, 3.3rem);
+}
+
+.page-heading p {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: #52606d;
+  line-height: 1.55;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-card {
+  display: grid;
+  gap: 10px;
+  min-height: 150px;
+  padding: 22px;
+  border: 1px solid #d9e2d5;
+  border-radius: 14px;
+  background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(31, 41, 51, 0.04);
+}
+
+.dashboard-card:hover {
+  border-color: #adc0a8;
+  transform: translateY(-1px);
+}
+
+.dashboard-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.dashboard-card p {
+  margin: 0;
+  color: #66756e;
+  line-height: 1.45;
+}
+
+.dashboard-card .card-kicker {
+  color: #355e3b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.mobile-header,
+.nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    display: flex;
+    height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid #d9e2d5;
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #c8d2c5;
+    background: #ffffff;
+    color: #355e3b;
+  }
+
+  .sidebar {
+    width: min(290px, 86vw);
+    transform: translateX(-102%);
+    transition: transform 160ms ease;
+    box-shadow: 10px 0 30px rgba(31, 41, 51, 0.12);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(21, 31, 26, 0.35);
+  }
+
+  .app-content {
+    margin-left: 0;
+  }
+
+  .content-page {
+    width: min(100% - 28px, 760px);
+    padding: 28px 0 48px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
