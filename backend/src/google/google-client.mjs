@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -26,13 +26,18 @@ function googleConfig() {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ??
-      "http://localhost:3001/api/google/oauth/callback"
+      "http://localhost:3001/api/google/oauth/callback",
+    expectedEmail: process.env.GOOGLE_ACCOUNT_EMAIL ?? ""
   };
 }
 
 export function isGoogleConfigured() {
   const config = googleConfig();
   return Boolean(config.clientId && config.clientSecret && config.redirectUri);
+}
+
+export function getExpectedGoogleAccount() {
+  return googleConfig().expectedEmail || null;
 }
 
 export function createAuthorizationUrl() {
@@ -57,9 +62,13 @@ export function createAuthorizationUrl() {
     scope: scopes.join(" "),
     access_type: "offline",
     include_granted_scopes: "true",
-    prompt: "consent",
+    prompt: "consent select_account",
     state
   });
+
+  if (config.expectedEmail) {
+    params.set("login_hint", config.expectedEmail);
+  }
 
   return `${authorizationEndpoint}?${params.toString()}`;
 }
@@ -76,6 +85,10 @@ async function saveToken(token) {
     encoding: "utf8",
     mode: 0o600
   });
+}
+
+export async function clearGoogleToken() {
+  await rm(tokenPath, { force: true });
 }
 
 export async function loadToken() {
