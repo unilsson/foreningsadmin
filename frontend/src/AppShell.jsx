@@ -62,6 +62,7 @@ export default function AppShell({ organisationName, backendOk, children }) {
           <MenuLink to="/admin/board" onNavigate={closeMenu}>Styrelse</MenuLink>
           <MenuLink to="/admin/agenda" onNavigate={closeMenu}>Dagordningsmall</MenuLink>
           <MenuLink to="/admin/google" onNavigate={closeMenu}>Google Calendar</MenuLink>
+          <MenuLink to="/admin/backup" onNavigate={closeMenu}>Backup</MenuLink>
         </nav>
 
         <div className="sidebar-status">
