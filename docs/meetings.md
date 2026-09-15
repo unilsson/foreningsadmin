@@ -1,6 +1,6 @@
 # Sparade möten och mötesarkiv
 
-Sprint 7 gör ett styrelsemöte till ett permanent objekt i Föreningsadmin. Ett möte kan sparas, öppnas igen, ändras och tas bort.
+Sprint 7 gör ett styrelsemöte till ett permanent objekt i Föreningsadmin. Ett möte kan sparas, öppnas igen, ändras och tas bort. Från Sprint 8 kan mötesobjektet också ha dokument kopplade till sig.
 
 ## Lagring
 
@@ -10,11 +10,17 @@ Varje sparat möte ligger som ett separat JSON-dokument under:
 data/meetings/<uuid>.json
 ```
 
-`data/` ignoreras av Git och innehåller föreningens lokala driftdata. Ett separat dokument per möte gör det enkelt att säkerhetskopiera och inspektera data utan att introducera en databas i samma sprint. Om datamodellen senare växer med protokoll, åtgärdspunkter och fler relationer kan lagringen migreras till SQLite utan att frontendens arbetsflöde behöver ändras.
+`data/` ignoreras av Git och innehåller föreningens lokala driftdata. Ett separat dokument per möte gör det enkelt att säkerhetskopiera och inspektera data utan att introducera en databas.
+
+Dokumentfiler som hör till mötet ligger separat under:
+
+```text
+data/meeting-files/<uuid>/
+```
 
 ## Datamodell
 
-Ett möte innehåller i Sprint 7:
+Ett möte innehåller:
 
 ```json
 {
@@ -32,6 +38,7 @@ Ett möte innehåller i Sprint 7:
     "meetingItems": [],
     "afterMeetingItems": []
   },
+  "documents": [],
   "createdAt": "ISO-8601",
   "updatedAt": "ISO-8601"
 }
@@ -43,6 +50,8 @@ Giltiga statusvärden är:
 - `completed` – Genomfört
 - `cancelled` – Inställt
 
+`documents` innehåller metadata om filer som hör till mötet. Själva filerna sparas inte i JSON. Se [meeting-documents.md](meeting-documents.md).
+
 ## Arbetsflöde
 
 1. Öppna **Möten → Styrelsemöte**.
@@ -51,6 +60,7 @@ Giltiga statusvärden är:
 4. Lägg till eller ändra dagordningen under **Dagordning**.
 5. Välj **Spara möte och dagordning**.
 6. Öppna senare **Möten → Mötesarkiv** för att fortsätta arbetet.
+7. När sekreterarens färdiga protokoll finns kan det laddas upp på mötets arkivsida.
 
 När ett sparat möte öppnas från arkivet kan användaren välja att redigera mötesuppgifterna eller dagordningen. Det aktuella mötet läggs då i webbläsarens session som arbetsyta, medan den permanenta kopian ligger kvar i `data/meetings/` tills användaren sparar ändringarna.
 
@@ -66,8 +76,10 @@ DELETE /api/saved-meetings/:id
 
 Skapande och uppdatering återanvänder samma validering av datum, tider och plats som mötesförhandsgranskningen.
 
+Dokument-API:t dokumenteras i [meeting-documents.md](meeting-documents.md).
+
 ## Säkerhet och backup
 
-Mötesfilerna kan innehålla föreningsintern information och ska inte checkas in i ett publikt Git-repository. De täcks av `data/*` i `.gitignore`.
+Mötesdata och mötesdokument kan innehålla föreningsintern information och ska inte checkas in i ett publikt Git-repository. De täcks av `data/*` i `.gitignore`.
 
-En framtida backup bör omfatta hela `data/`-katalogen och `tokens/` enligt respektive säkerhetskrav.
+En backup bör omfatta hela `data/`-katalogen och `tokens/` enligt respektive säkerhetskrav.

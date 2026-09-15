@@ -1,20 +1,30 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, readdir, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, unlink, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDir, "../../..");
-const meetingsDir = path.join(projectRoot, "data", "meetings");
+const dataDir = path.join(projectRoot, "data");
+const meetingsDir = path.join(dataDir, "meetings");
+const meetingFilesDir = path.join(dataDir, "meeting-files");
 
 const VALID_STATUSES = new Set(["planned", "completed", "cancelled"]);
 const ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function meetingPath(id) {
+function assertMeetingId(id) {
   if (!ID_PATTERN.test(String(id ?? ""))) {
     throw new Error("Ogiltigt mötes-ID.");
   }
-  return path.join(meetingsDir, `${id}.json`);
+  return String(id);
+}
+
+function meetingPath(id) {
+  return path.join(meetingsDir, `${assertMeetingId(id)}.json`);
+}
+
+function meetingDocumentsPath(id) {
+  return path.join(meetingFilesDir, assertMeetingId(id));
 }
 
 function cleanItems(items) {
@@ -48,6 +58,22 @@ function normalizeStatus(status) {
   return value;
 }
 
+function normalizeDocuments(documents) {
+  if (!Array.isArray(documents)) return [];
+  return documents
+    .filter((document) => document && typeof document === "object")
+    .map((document) => ({
+      id: String(document.id ?? "").trim(),
+      type: String(document.type ?? "").trim(),
+      originalFilename: String(document.originalFilename ?? "").trim(),
+      storedFilename: String(document.storedFilename ?? "").trim(),
+      mimeType: String(document.mimeType ?? "application/octet-stream").trim(),
+      size: Number(document.size ?? 0),
+      uploadedAt: String(document.uploadedAt ?? "").trim()
+    }))
+    .filter((document) => document.id && document.type && document.storedFilename);
+}
+
 async function writeAtomic(filename, value) {
   await mkdir(meetingsDir, { recursive: true });
   const temp = `${filename}.${process.pid}.${Date.now()}.tmp`;
@@ -57,7 +83,11 @@ async function writeAtomic(filename, value) {
 
 async function readMeeting(id) {
   try {
-    return JSON.parse(await readFile(meetingPath(id), "utf8"));
+    const record = JSON.parse(await readFile(meetingPath(id), "utf8"));
+    return {
+      ...record,
+      documents: normalizeDocuments(record.documents)
+    };
   } catch (error) {
     if (error.code === "ENOENT") return null;
     throw error;
@@ -69,6 +99,7 @@ function toSummary(record) {
     id: record.id,
     status: record.status,
     meeting: record.meeting,
+    documents: normalizeDocuments(record.documents),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt
   };
@@ -106,6 +137,7 @@ export async function createMeetingRecord({ meeting, agenda, status = "planned" 
     status: normalizeStatus(status),
     meeting: normalizeMeeting(meeting),
     agenda: normalizeAgenda(agenda),
+    documents: [],
     createdAt: now,
     updatedAt: now
   };
@@ -123,6 +155,7 @@ export async function updateMeetingRecord(id, { meeting, agenda, status }) {
     status: normalizeStatus(status ?? previous.status),
     meeting: normalizeMeeting(meeting ?? previous.meeting),
     agenda: normalizeAgenda(agenda ?? previous.agenda),
+    documents: normalizeDocuments(previous.documents),
     updatedAt: new Date().toISOString()
   };
 
@@ -130,9 +163,44 @@ export async function updateMeetingRecord(id, { meeting, agenda, status }) {
   return record;
 }
 
+export async function setMeetingDocumentMetadata(id, document) {
+  const previous = await readMeeting(id);
+  if (!previous) return null;
+
+  const documents = normalizeDocuments(previous.documents).filter(
+    (item) => item.type !== document.type
+  );
+  documents.push(document);
+
+  const record = {
+    ...previous,
+    documents: normalizeDocuments(documents),
+    updatedAt: new Date().toISOString()
+  };
+  await writeAtomic(meetingPath(id), record);
+  return record;
+}
+
+export async function removeMeetingDocumentMetadata(id, type) {
+  const previous = await readMeeting(id);
+  if (!previous) return null;
+
+  const record = {
+    ...previous,
+    documents: normalizeDocuments(previous.documents).filter(
+      (document) => document.type !== type
+    ),
+    updatedAt: new Date().toISOString()
+  };
+  await writeAtomic(meetingPath(id), record);
+  return record;
+}
+
 export async function deleteMeetingRecord(id) {
+  const validatedId = assertMeetingId(id);
   try {
-    await unlink(meetingPath(id));
+    await unlink(meetingPath(validatedId));
+    await rm(meetingDocumentsPath(validatedId), { recursive: true, force: true });
     return true;
   } catch (error) {
     if (error.code === "ENOENT") return false;

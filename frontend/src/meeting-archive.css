@@ -61,7 +61,15 @@
   color: var(--muted, #637083);
 }
 
-.meeting-status {
+.meeting-archive-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.meeting-status,
+.protocol-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -77,12 +85,18 @@
   background: #eaf2ff;
 }
 
-.status-completed {
+.status-completed,
+.protocol-status.has-protocol {
   background: #e9f7ef;
 }
 
-.status-cancelled {
+.status-cancelled,
+.protocol-status.no-protocol {
   background: #f3f0f0;
+}
+
+.protocol-status.missing-protocol {
+  background: #fff2cc;
 }
 
 .empty-meeting-archive {
@@ -133,6 +147,75 @@
   margin-bottom: 0;
 }
 
+.meeting-documents-card {
+  margin-top: 1rem;
+}
+
+.protocol-document {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.1rem;
+  padding: 1rem;
+  border: 1px solid var(--border, #d8dde4);
+  border-radius: 0.75rem;
+  background: #f8fafb;
+}
+
+.protocol-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.protocol-file-info strong {
+  overflow-wrap: anywhere;
+}
+
+.protocol-file-info span,
+.protocol-upload-empty small {
+  color: var(--muted, #637083);
+}
+
+.protocol-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.protocol-upload-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--border, #d8dde4);
+  border-radius: 0.75rem;
+}
+
+.protocol-upload-empty p {
+  margin: 0;
+}
+
+.file-upload-button {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.file-upload-button input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
 .meeting-danger-zone {
   display: flex;
   align-items: center;
@@ -161,7 +244,7 @@
 }
 
 .meeting-save-message {
-  margin: 0;
+  margin: 0.75rem 0 0;
   color: #27623a;
   font-weight: 600;
 }
@@ -176,13 +259,18 @@
 
 @media (max-width: 760px) {
   .meeting-archive-toolbar,
-  .saved-meeting-title-row {
+  .saved-meeting-title-row,
+  .protocol-document {
     align-items: stretch;
     flex-direction: column;
   }
 
   .meeting-archive-item {
     grid-template-columns: 1fr;
+  }
+
+  .meeting-archive-badges {
+    align-items: flex-start;
   }
 
   .meeting-status {
