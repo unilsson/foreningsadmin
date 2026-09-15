@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import AppShell from "./AppShell.jsx";
 import BoardAdmin from "./BoardAdmin.jsx";
 import ActionItems from "./ActionItems.jsx";
+import Events from "./Events.jsx";
 import { MeetingArchive, MeetingDetail } from "./MeetingArchive.jsx";
 
 export default function RootApp() {
@@ -15,6 +16,10 @@ export default function RootApp() {
 
   if (location.pathname === "/actions") {
     return <ShellRoute><ActionItems /></ShellRoute>;
+  }
+
+  if (location.pathname === "/events") {
+    return <ShellRoute><Events /></ShellRoute>;
   }
 
   if (location.pathname === "/meetings") {

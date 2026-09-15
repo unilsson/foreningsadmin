@@ -1,5 +1,19 @@
 # Changelog
 
+## Sprint 10 – Kalendarium och evenemang
+
+- Ny sida **Kalendarium → Evenemang**.
+- Evenemang sparas strukturerat i `data/events.json`.
+- Stöd för datum, tider, plats, huvudansvarig, bemanning, praktiska förberedelser och planeringsanteckningar.
+- Status stöder Ej påbörjad, Planering pågår, Klart för genomförande och Genomfört.
+- Föreningens vanliga marknadsföringsrutiner kan markeras separat från särskilda marknadsföringsanteckningar.
+- Erfarenheter efter genomfört evenemang kan sparas på posten.
+- Listan kan filtreras på år och genomförandestatus.
+- Export till Markdown och PDF använder valt år.
+- Äldre Markdown-listor kan importeras med `scripts/import-events-markdown.mjs`.
+- API för skapa, ändra, ta bort och exportera evenemang.
+- Datamodell och arbetsflöde dokumenteras i `docs/events.md`.
+
 ## Sprint 9 – Åtgärdslista
 
 - Ny sida **Åtgärder → Åtgärdslista**.
@@ -54,7 +68,7 @@
 - Permanent vänstermeny på större skärmar.
 - Responsiv meny för mindre skärmar.
 - Separata routes för start, styrelsemöte, dagordning och administration.
-- Google Calendar-inställningar flyttade till en egen administrationssida.
+- Google Calendar-inställningar flyttades till en egen administrationssida.
 - Dagordningsmallen nås från en egen administrationssida.
 - Startsida med genvägar till appens viktigaste delar.
 - React Router används för bokmärkningsbara URL:er och webbläsarnavigation.
