@@ -1,5 +1,17 @@
 # Changelog
 
+## Sprint 6 – Styrelseadministration
+
+- Ny sida **Administration → Styrelse**.
+- Styrelsemedlemmar kan läggas till och redigeras i webbappen.
+- Personer kan markeras som aktiva eller inaktiva.
+- Ordningen på styrelsemedlemmar kan ändras.
+- E-postadresser och obligatoriska fält valideras i backend.
+- Aktiv styrelse sparas lokalt i `data/board.json`.
+- Ändringshistorik sparas lokalt i `data/board-history.jsonl`.
+- Äldre `config/board.json` stöds som fallback tills styrelsen sparas från administrationssidan.
+- Mötesförhandsgranskning och kalenderinbjudningar läser aktuell styrelse dynamiskt utan omstart.
+
 ## Sprint 5 – Appskal och navigation
 
 - Permanent vänstermeny på större skärmar.
