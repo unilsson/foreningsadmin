@@ -18,6 +18,7 @@ credentials.json
 # Local application data
 data/*
 !data/.gitkeep
+backups/
 *.db
 *.db-shm
 *.db-wal
