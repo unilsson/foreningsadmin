@@ -2,7 +2,7 @@
 
 Ett enkelt webbverktyg för återkommande administration i Haninge Hembygdsgille.
 
-Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar, styrelseuppgifter och mötesdokument. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
+Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar, styrelseuppgifter, mötesdokument och åtgärdslista. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
 
 ## Status
 
@@ -69,6 +69,17 @@ Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagord
 - dokumentmetadata sparas i mötesobjektet och själva filen under `data/meeting-files/`
 - lagringsmodellen är förberedd för fler dokumenttyper senare
 
+### Sprint 9 – åtgärdslista
+
+- sida **Åtgärder → Åtgärdslista**
+- strukturerade åtgärdspunkter i `data/action-items.json`
+- nummer, åtgärd, ansvariga, beslutstext, deadline, status och kommentar
+- frivillig koppling till ett sparat styrelsemöte
+- status: Ej påbörjad, Pågår, Väntar och Klart
+- klara punkter visas automatiskt som avslutade
+- export till Markdown och PDF
+- engångsimport av föreningens äldre Markdown-tabell via skript
+
 Se även [CHANGELOG.md](CHANGELOG.md).
 
 ## Struktur
@@ -77,6 +88,7 @@ Se även [CHANGELOG.md](CHANGELOG.md).
 foreningsadmin/
 ├── backend/
 │   └── src/
+│       ├── actions/
 │       ├── agenda/
 │       ├── board/
 │       ├── config/
@@ -92,6 +104,7 @@ foreningsadmin/
 │   ├── meetings/
 │   └── meeting-files/
 ├── docs/
+│   ├── action-items.md
 │   ├── agenda.md
 │   ├── board.md
 │   ├── configuration.md
@@ -100,6 +113,8 @@ foreningsadmin/
 │   └── navigation.md
 ├── frontend/
 │   └── src/
+├── scripts/
+│   └── import-action-items-markdown.mjs
 ├── templates/
 │   └── calendar/
 ├── tokens/
@@ -147,6 +162,7 @@ De viktigaste sidorna är:
 /meetings/:meetingId    Sparat möte och dess dokument
 /meetings/new           Styrelsemöte
 /agenda                 Dagordning
+/actions                Åtgärdslista
 /admin/board            Styrelse
 /admin/agenda           Dagordningsmall
 /admin/google           Google Calendar
@@ -166,11 +182,26 @@ data/agenda-history.jsonl                historik för dagordningsmallen
 data/board.json                          aktuell styrelse
 data/board-history.jsonl                 historik för styrelsen
 data/google-calendar.json                valt Google Calendar-ID
+data/action-items.json                    åtgärdslista
 data/meetings/<uuid>.json                 sparade möten och dokumentmetadata
 data/meeting-files/<uuid>/<fil>           mötesdokument
 ```
 
-Mer information finns i [docs/configuration.md](docs/configuration.md), [docs/meetings.md](docs/meetings.md) och [docs/meeting-documents.md](docs/meeting-documents.md).
+Mer information finns i [docs/configuration.md](docs/configuration.md), [docs/meetings.md](docs/meetings.md), [docs/meeting-documents.md](docs/meeting-documents.md) och [docs/action-items.md](docs/action-items.md).
+
+## Åtgärdslista
+
+Under **Åtgärder → Åtgärdslista** hanteras föreningens pågående och avslutade åtgärdspunkter. Varje post har ett internt UUID och ett synligt nummer i formatet `ÅÅ-NNN`. Om nummer lämnas tomt skapas nästa nummer automatiskt.
+
+Åtgärder kan ha flera ansvariga, fri beslutstext, deadline, status, kommentar och en frivillig koppling till ett sparat möte. När status sätts till **Klart** visas punkten under Avslutade åtgärder.
+
+Markdown och PDF genereras från `data/action-items.json` och är exportformat. En äldre Markdown-lista kan importeras lokalt:
+
+```bash
+node scripts/import-action-items-markdown.mjs "/sökväg/till/Åtgärdslista.md"
+```
+
+Se [docs/action-items.md](docs/action-items.md).
 
 ## Mötesarkiv
 
@@ -271,6 +302,13 @@ PUT    /api/saved-meetings/:id/documents/protocol
 GET    /api/saved-meetings/:id/documents/protocol
 DELETE /api/saved-meetings/:id/documents/protocol
 
+GET    /api/action-items
+POST   /api/action-items
+PUT    /api/action-items/:id
+DELETE /api/action-items/:id
+GET    /api/action-items/export.md
+GET    /api/action-items/export.pdf
+
 GET  /api/agenda/template
 POST /api/agenda/preview
 POST /api/agenda/pdf
@@ -292,7 +330,7 @@ POST /api/google/calendar/events
 
 ## Säkerhet
 
-Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter, föreningens lokala mötesdata och mötesdokument ska aldrig checkas in i Git.
+Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter, föreningens lokala mötesdata, åtgärdslista och mötesdokument ska aldrig checkas in i Git.
 
 Projektets `.gitignore` skyddar bland annat:
 

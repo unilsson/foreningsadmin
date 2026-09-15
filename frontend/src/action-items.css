@@ -1,0 +1,218 @@
+.action-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.action-stats,
+.action-toolbar-buttons,
+.action-item-buttons,
+.action-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.action-stats span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border, #d8dde4);
+  border-radius: 0.7rem;
+  background: var(--surface, #fff);
+}
+
+.action-editor {
+  margin-bottom: 1.25rem;
+}
+
+.action-editor-heading,
+.action-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.action-editor-heading h2,
+.action-section-heading h2 {
+  margin-top: 0.35rem;
+}
+
+.action-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.action-title-field,
+.action-comment-field {
+  grid-column: 1 / -1;
+}
+
+.action-comment-field textarea {
+  resize: vertical;
+}
+
+.action-editor-actions {
+  margin-top: 1rem;
+}
+
+.action-message {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 4px solid #2f7a45;
+  border-radius: 0.35rem;
+  background: #eef8f1;
+  color: #245e36;
+  font-weight: 600;
+}
+
+.action-section {
+  margin-top: 1.5rem;
+}
+
+.action-section-heading {
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.action-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.action-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.2rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border, #d8dde4);
+  border-left-width: 5px;
+  border-radius: 0.8rem;
+  background: var(--surface, #fff);
+}
+
+.status-card-not_started {
+  border-left-color: #8a96a3;
+}
+
+.status-card-in_progress {
+  border-left-color: #3b6fb6;
+}
+
+.status-card-waiting {
+  border-left-color: #b47a1e;
+}
+
+.status-card-completed {
+  border-left-color: #38834d;
+}
+
+.action-item-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.action-number {
+  align-self: start;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.45rem;
+  background: #f1f4f7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.action-item h3 {
+  margin: 0 0 0.45rem;
+}
+
+.action-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  color: var(--muted, #637083);
+  font-size: 0.92rem;
+}
+
+.action-decided,
+.action-meeting,
+.action-comment {
+  margin: 0.5rem 0 0;
+}
+
+.action-comment {
+  white-space: pre-wrap;
+}
+
+.action-item-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.9rem;
+  min-width: 150px;
+}
+
+.action-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  background: #eef2f6;
+}
+
+.action-status-not_started {
+  background: #eef1f4;
+}
+
+.action-status-in_progress {
+  background: #eaf2ff;
+}
+
+.action-status-waiting {
+  background: #fff4dd;
+}
+
+.action-status-completed {
+  background: #e9f7ef;
+}
+
+@media (max-width: 760px) {
+  .action-toolbar,
+  .action-editor-heading,
+  .action-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .action-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-title-field,
+  .action-comment-field {
+    grid-column: auto;
+  }
+
+  .action-item-main {
+    grid-template-columns: 1fr;
+  }
+
+  .action-item-side {
+    align-items: flex-start;
+    min-width: 0;
+  }
+}

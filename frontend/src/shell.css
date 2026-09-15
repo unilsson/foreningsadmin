@@ -130,6 +130,10 @@
   margin-bottom: 28px;
 }
 
+.page-heading .eyebrow {
+  margin-bottom: 12px;
+}
+
 .page-heading h1 {
   margin-bottom: 8px;
   font-size: clamp(2rem, 5vw, 3.3rem);
