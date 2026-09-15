@@ -2,7 +2,7 @@
 
 Ett enkelt webbverktyg för återkommande administration i Haninge Hembygdsgille.
 
-Appen hanterar i dag styrelsemöten, Google Calendar-inbjudningar och dagordningar. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
+Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar och föreningens styrelseuppgifter. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
 
 ## Status
 
@@ -12,7 +12,6 @@ Appen hanterar i dag styrelsemöten, Google Calendar-inbjudningar och dagordning
 - Node.js/Express-backend
 - formulär och förhandsgranskning för styrelsemöten
 - standardvärden från `config/defaults.json`
-- lokala styrelseuppgifter från `config/board.json`
 
 ### Sprint 2 – Google Calendar
 
@@ -27,17 +26,38 @@ Appen hanterar i dag styrelsemöten, Google Calendar-inbjudningar och dagordning
 - standardpunkter före och efter mötesspecifika ärenden
 - automatisk numrering
 - förhandsgranskning
-- export till Markdown
-- export till PDF med PDFKit
+- export till Markdown och PDF
 
 ### Sprint 4 – administration och konfiguration
 
 - redigering av dagordningens standardmall direkt i webbappen
-- lägga till, ta bort, ändra och flytta standardpunkter
 - lokal aktiv mall i `data/agenda.json`
 - återställning till programmets standard i `config/agenda.json`
-- lokal ändringshistorik i `data/agenda-history.jsonl`
-- projektdokumentation under `docs/`
+- lokal ändringshistorik
+
+### Sprint 5 – appskal och navigation
+
+- permanent vänstermeny på desktop
+- responsiv meny på mindre skärmar
+- React Router och bokmärkningsbara sidor
+- separata arbetsytor för möten, dagordning och administration
+
+### Sprint 6 – styrelseadministration
+
+- sida **Administration → Styrelse**
+- redigering av namn, roll, e-post och aktiv/inaktiv-status
+- lokal styrelsedata i `data/board.json`
+- ändringshistorik i `data/board-history.jsonl`
+- aktuell styrelse används direkt i möten och kalenderinbjudningar
+
+### Sprint 7 – sparade möten och mötesarkiv
+
+- sida **Möten → Mötesarkiv**
+- möten kan sparas, öppnas igen och redigeras
+- möte och dagordning sparas tillsammans
+- status: Planerat, Genomfört eller Inställt
+- separata mötesfiler under `data/meetings/`
+- sparade möten kan tas bort efter bekräftelse
 
 Se även [CHANGELOG.md](CHANGELOG.md).
 
@@ -48,6 +68,7 @@ foreningsadmin/
 ├── backend/
 │   └── src/
 │       ├── agenda/
+│       ├── board/
 │       ├── config/
 │       ├── google/
 │       ├── meetings/
@@ -58,9 +79,13 @@ foreningsadmin/
 │   ├── board.example.json
 │   └── defaults.json
 ├── data/
+│   └── meetings/
 ├── docs/
 │   ├── agenda.md
-│   └── configuration.md
+│   ├── board.md
+│   ├── configuration.md
+│   ├── meetings.md
+│   └── navigation.md
 ├── frontend/
 │   └── src/
 ├── templates/
@@ -89,6 +114,8 @@ cp config/board.example.json config/board.json
 npm run dev
 ```
 
+När styrelsen senare sparas genom webbgränssnittet skapas `data/board.json`, som därefter används i stället för den äldre lokala `config/board.json`.
+
 Öppna därefter:
 
 ```text
@@ -98,31 +125,63 @@ Backend:  http://localhost:3001
 
 Vite proxyar `/api` till backend under utveckling.
 
-## Konfigurationsprincip
+## Navigation
 
-Programstandard som är säker att publicera ligger under `config/` och versionshanteras i Git.
-
-Lokal konfiguration som bara gäller installationen ligger under `data/` och ignoreras av Git.
-
-För dagordningen gäller exempelvis:
+De viktigaste sidorna är:
 
 ```text
-data/agenda.json      # aktiv lokal mall, om den finns
-        ↓ fallback
-config/agenda.json    # programmets standardmall
+/                       Start
+/meetings               Mötesarkiv
+/meetings/:meetingId    Sparat möte
+/meetings/new           Styrelsemöte
+/agenda                 Dagordning
+/admin/board            Styrelse
+/admin/agenda           Dagordningsmall
+/admin/google           Google Calendar
 ```
 
-Riktiga styrelseuppgifter finns i `config/board.json`. Den filen är också lokal och ignoreras av Git.
+Se [docs/navigation.md](docs/navigation.md).
 
-Mer information finns i [docs/configuration.md](docs/configuration.md).
+## Lokal data
+
+Programstandard som är säker att publicera ligger under `config/` och versionshanteras i Git. Lokal föreningsdata ligger under `data/` och ignoreras av Git.
+
+Exempel:
+
+```text
+data/agenda.json              aktiv dagordningsmall
+data/agenda-history.jsonl     historik för dagordningsmallen
+data/board.json               aktuell styrelse
+data/board-history.jsonl      historik för styrelsen
+data/google-calendar.json     valt Google Calendar-ID
+data/meetings/<uuid>.json      sparade möten
+```
+
+Mer information finns i [docs/configuration.md](docs/configuration.md) och [docs/meetings.md](docs/meetings.md).
+
+## Mötesarkiv
+
+Ett sparat möte innehåller datum, tid, plats, status och sin dagordning. Varje möte får ett stabilt UUID och sparas som ett separat JSON-dokument i `data/meetings/`.
+
+Från mötesarkivet kan ett möte öppnas och sedan skickas tillbaka till mötes- eller dagordningsarbetsytan för fortsatt redigering. Den permanenta filen ändras först när användaren sparar.
+
+Se [docs/meetings.md](docs/meetings.md).
 
 ## Dagordning
 
 Dagordningen består av standardpunkter före mötesspecifika ärenden, mötesspecifika ärenden och standardpunkter efter dem. Punktnumren genereras automatiskt.
 
-Under **Administration – dagordningsmall** kan standardmallen ändras utan att källkoden behöver redigeras. Den sparade föreningsmallen ligger lokalt i `data/agenda.json`, medan `config/agenda.json` alltid finns kvar som återställningsbar programstandard.
+Under **Administration → Dagordningsmall** kan standardmallen ändras utan att källkoden behöver redigeras. Den sparade föreningsmallen ligger lokalt i `data/agenda.json`, medan `config/agenda.json` finns kvar som återställningsbar programstandard.
 
-Se [docs/agenda.md](docs/agenda.md) för datamodell, filer, historik och API.
+Se [docs/agenda.md](docs/agenda.md).
+
+## Styrelse
+
+Under **Administration → Styrelse** kan namn, roll, e-post, aktiv/inaktiv-status och ordning ändras. Aktiva personer används som kalenderdeltagare i mötesförhandsgranskning och Google Calendar-inbjudningar.
+
+Den aktiva styrelsen sparas i `data/board.json`. En äldre lokal `config/board.json` stöds som fallback tills styrelsen har sparats genom webbappen.
+
+Se [docs/board.md](docs/board.md).
 
 ## Google Calendar
 
@@ -179,9 +238,18 @@ GET  /api/config
 GET  /api/board
 POST /api/meetings/preview
 
+GET    /api/saved-meetings
+POST   /api/saved-meetings
+GET    /api/saved-meetings/:id
+PUT    /api/saved-meetings/:id
+DELETE /api/saved-meetings/:id
+
 GET  /api/agenda/template
 POST /api/agenda/preview
 POST /api/agenda/pdf
+
+GET /api/admin/board
+PUT /api/admin/board
 
 GET  /api/admin/agenda-template
 PUT  /api/admin/agenda-template
@@ -197,7 +265,7 @@ POST /api/google/calendar/events
 
 ## Säkerhet
 
-Riktiga nycklar, OAuth-tokens, lösenord och privata kontaktuppgifter ska aldrig checkas in i Git.
+Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter och föreningens lokala mötesdata ska aldrig checkas in i Git.
 
 Projektets `.gitignore` skyddar bland annat:
 
