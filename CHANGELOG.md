@@ -1,5 +1,19 @@
 # Changelog
 
+## Sprint 11 – Backup och återställning
+
+- Ny sida **Administration → Backup**.
+- Komplett backup av lokala filer under `data/` kan hämtas som en enda versionsstyrd JSON-fil.
+- Äldre lokal `config/board.json` tas med om den fortfarande används.
+- Binära mötesdokument inkluderas i backupen med base64-kodning.
+- Varje backupfilpost får storlek och SHA-256-kontrollsumma.
+- Backup kan återställas direkt från webbgränssnittet.
+- Backupens sökvägar, storlekar och kontrollsummor valideras före återställning.
+- Nuvarande data sparas automatiskt under `backups/pre-restore-.../` innan en återställning ersätter installationens data.
+- `backups/` ignoreras av Git.
+- `.env`, OAuth-token och andra hemligheter ingår inte i appbackupen.
+- Backupformat och flytt till ny installation dokumenteras i `docs/backup.md`.
+
 ## Sprint 10 – Kalendarium och evenemang
 
 - Ny sida **Kalendarium → Evenemang**.
