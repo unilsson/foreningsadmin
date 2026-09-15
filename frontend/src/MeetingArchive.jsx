@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const WORKSPACE_KEY = "foreningsadmin.meetingWorkspace";
 
@@ -105,8 +105,7 @@ export function MeetingArchive() {
   );
 }
 
-export function MeetingDetail() {
-  const { meetingId } = useParams();
+export function MeetingDetail({ meetingId }) {
   const navigate = useNavigate();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
