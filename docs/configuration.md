@@ -89,8 +89,18 @@ config/board.json     # äldre lokal installation, om filen finns
 
 ## Backup
 
-Eftersom lokal föreningsdata under `data/` inte finns i Git måste installationens `data/` tas med i vanlig lokal backup. GitHub-repot räcker alltså inte som backup av mötesarkiv, protokoll, åtgärdslista, kalendarium, styrelseuppgifter eller aktiva inställningar.
+Under **Administration → Backup** kan en samlad backup av installationens lokala föreningsdata hämtas. Backupen innehåller hela `data/` och, om den fortfarande används, den äldre lokala `config/board.json`.
 
-För ett komplett mötesarkiv måste både `data/meetings/` och `data/meeting-files/` finnas med i backupen. Åtgärdslistan finns i `data/action-items.json` och kalendariet i `data/events.json`; båda ska omfattas av samma backup.
+Det innebär att mötesarkiv, protokoll och andra mötesdokument, styrelseuppgifter, aktiva mallar, historik, åtgärdslista, kalendarium och valt kalender-ID följer med i samma backupfil.
 
-OAuth-token ligger separat under `tokens/` och ska hanteras som en hemlighet i backup och återställning.
+Vid återställning valideras filens format, sökvägar, storlekar och SHA-256-kontrollsummor. Nuvarande lokala data flyttas först till:
+
+```text
+backups/pre-restore-<timestamp>/
+```
+
+`backups/` ignoreras av Git.
+
+OAuth-token, `.env` och andra hemligheter ingår inte i appbackupen. De måste hanteras separat. På en ny installation behöver Google Calendar därför normalt anslutas igen.
+
+Se [backup.md](backup.md) för backupformat och flytt till en ny installation.

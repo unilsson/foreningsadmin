@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import App from "./App.jsx";
 import AppShell from "./AppShell.jsx";
 import BoardAdmin from "./BoardAdmin.jsx";
+import BackupAdmin from "./BackupAdmin.jsx";
 import ActionItems from "./ActionItems.jsx";
 import Events from "./Events.jsx";
 import { MeetingArchive, MeetingDetail } from "./MeetingArchive.jsx";
@@ -12,6 +13,10 @@ export default function RootApp() {
 
   if (location.pathname === "/admin/board") {
     return <ShellRoute eyebrow="Administration" title="Styrelse" text="Hantera vilka personer som sitter i styrelsen och vilka som ska få kalenderinbjudningar till styrelsemöten."><BoardAdmin /></ShellRoute>;
+  }
+
+  if (location.pathname === "/admin/backup") {
+    return <ShellRoute><BackupAdmin /></ShellRoute>;
   }
 
   if (location.pathname === "/actions") {

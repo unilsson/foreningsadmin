@@ -1,6 +1,6 @@
 # Navigation och appskal
 
-Sprint 5 delar upp Föreningsadmin i separata arbetsytor med en permanent vänstermeny på större skärmar och en infällbar meny på mindre skärmar. Sprint 7 utökar mötesdelen med ett permanent mötesarkiv, Sprint 9 lägger till åtgärdslistan och Sprint 10 lägger till kalendariet.
+Sprint 5 delar upp Föreningsadmin i separata arbetsytor med en permanent vänstermeny på större skärmar och en infällbar meny på mindre skärmar. Sprint 7 utökar mötesdelen med ett permanent mötesarkiv, Sprint 9 lägger till åtgärdslistan, Sprint 10 lägger till kalendariet och Sprint 11 lägger till backup och återställning.
 
 ## Routes
 
@@ -15,6 +15,7 @@ Sprint 5 delar upp Föreningsadmin i separata arbetsytor med en permanent vänst
 /admin/board            Administration av styrelsen
 /admin/agenda           Administration av standardmall för dagordning
 /admin/google           Google Calendar-konfiguration
+/admin/backup           Backup och återställning
 ```
 
 Frontend använder React Router. Menyn använder riktiga URL:er så att sidor kan bokmärkas och webbläsarens bakåt-/framåtknappar fungerar.
@@ -37,6 +38,8 @@ Frontend använder React Router. Menyn använder riktiga URL:er så att sidor ka
 
 **Google Calendar** innehåller OAuth-status och val av skrivbar kalender.
 
+**Backup** skapar en samlad backup av lokal föreningsdata och kan återställa en tidigare backup på samma eller en ny installation.
+
 ## Arbetsyta för ett sparat möte
 
 När användaren väljer **Redigera mötet** eller **Redigera dagordning** från mötesarkivet läggs det sparade mötesobjektet i webbläsarens `sessionStorage`. Det gör att de befintliga arbetsytorna kan laddas med rätt mötes- och dagordningsdata. Den permanenta versionen förändras först när användaren väljer att spara.
@@ -47,4 +50,4 @@ På desktop är vänstermenyn permanent synlig. På mindre skärmar döljs den b
 
 ## Drift
 
-Vite hanterar history fallback under lokal utveckling. Vid framtida produktion bakom en webbserver måste okända frontend-routes skickas till `index.html`, så att direktlänkar som `/meetings/<uuid>`, `/events`, `/actions`, `/admin/board` och `/admin/agenda` kan öppnas direkt.
+Vite hanterar history fallback under lokal utveckling. Vid framtida produktion bakom en webbserver måste okända frontend-routes skickas till `index.html`, så att direktlänkar som `/meetings/<uuid>`, `/events`, `/actions`, `/admin/board`, `/admin/backup` och `/admin/agenda` kan öppnas direkt.

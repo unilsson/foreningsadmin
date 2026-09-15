@@ -2,7 +2,7 @@
 
 Ett enkelt webbverktyg för återkommande administration i Haninge Hembygdsgille.
 
-Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar, styrelseuppgifter, mötesdokument och åtgärdslista. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
+Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar, styrelseuppgifter, mötesdokument, åtgärdslista, kalendarium och backup. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
 
 ## Status
 
@@ -80,6 +80,27 @@ Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagord
 - export till Markdown och PDF
 - engångsimport av föreningens äldre Markdown-tabell via skript
 
+### Sprint 10 – kalendarium och evenemang
+
+- sida **Kalendarium → Evenemang**
+- strukturerade evenemang i `data/events.json`
+- datum, tider, plats, ansvar, bemanning, förberedelser och marknadsföring
+- status för planering och genomförande
+- planeringsanteckningar och erfarenheter efter evenemang
+- filter per år och genomförandestatus
+- export till Markdown och PDF
+- engångsimport av föreningens äldre Markdown-tabell via skript
+
+### Sprint 11 – backup och återställning
+
+- sida **Administration → Backup**
+- samlad backup av lokal föreningsdata som en enda JSON-fil
+- mötesdokument och andra binära filer inkluderas
+- storlek och SHA-256-kontrollsumma per fil
+- återställning från webbgränssnittet
+- automatisk säkerhetskopia av befintlig data före återställning
+- `.env` och OAuth-token ingår inte eftersom de är hemligheter
+
 Se även [CHANGELOG.md](CHANGELOG.md).
 
 ## Struktur
@@ -90,8 +111,10 @@ foreningsadmin/
 │   └── src/
 │       ├── actions/
 │       ├── agenda/
+│       ├── backup/
 │       ├── board/
 │       ├── config/
+│       ├── events/
 │       ├── google/
 │       ├── meetings/
 │       ├── templates/
@@ -106,15 +129,18 @@ foreningsadmin/
 ├── docs/
 │   ├── action-items.md
 │   ├── agenda.md
+│   ├── backup.md
 │   ├── board.md
 │   ├── configuration.md
+│   ├── events.md
 │   ├── meeting-documents.md
 │   ├── meetings.md
 │   └── navigation.md
 ├── frontend/
 │   └── src/
 ├── scripts/
-│   └── import-action-items-markdown.mjs
+│   ├── import-action-items-markdown.mjs
+│   └── import-events-markdown.mjs
 ├── templates/
 │   └── calendar/
 ├── tokens/
@@ -162,10 +188,12 @@ De viktigaste sidorna är:
 /meetings/:meetingId    Sparat möte och dess dokument
 /meetings/new           Styrelsemöte
 /agenda                 Dagordning
+/events                 Kalendarium och evenemang
 /actions                Åtgärdslista
 /admin/board            Styrelse
 /admin/agenda           Dagordningsmall
 /admin/google           Google Calendar
+/admin/backup           Backup och återställning
 ```
 
 Se [docs/navigation.md](docs/navigation.md).
@@ -183,11 +211,30 @@ data/board.json                          aktuell styrelse
 data/board-history.jsonl                 historik för styrelsen
 data/google-calendar.json                valt Google Calendar-ID
 data/action-items.json                    åtgärdslista
+data/events.json                          kalendarium och evenemang
 data/meetings/<uuid>.json                 sparade möten och dokumentmetadata
 data/meeting-files/<uuid>/<fil>           mötesdokument
 ```
 
-Mer information finns i [docs/configuration.md](docs/configuration.md), [docs/meetings.md](docs/meetings.md), [docs/meeting-documents.md](docs/meeting-documents.md) och [docs/action-items.md](docs/action-items.md).
+Mer information finns i [docs/configuration.md](docs/configuration.md).
+
+## Backup och återställning
+
+Under **Administration → Backup** kan all lokal föreningsdata hämtas som en samlad backupfil och senare återställas på samma eller en ny installation.
+
+Backupen innehåller hela `data/` samt äldre lokal `config/board.json` om den fortfarande används. Före en återställning flyttas nuvarande lokala data automatiskt till `backups/pre-restore-.../`.
+
+Hemligheter som `.env` och `tokens/google.json` ingår inte. Vid flytt till en ny installation behöver därför lokal `.env` skapas och Google Calendar normalt anslutas igen.
+
+Se [docs/backup.md](docs/backup.md).
+
+## Kalendarium och evenemang
+
+Under **Kalendarium → Evenemang** hanteras föreningens arrangemang. Uppgifter om datum, tid, plats, ansvar, bemanning, förberedelser, marknadsföring, status och erfarenheter efter genomförande sparas i `data/events.json`.
+
+Markdown och PDF är exportformat. En äldre Markdown-lista kan importeras lokalt med `scripts/import-events-markdown.mjs`.
+
+Se [docs/events.md](docs/events.md).
 
 ## Åtgärdslista
 
@@ -215,9 +262,9 @@ Se [docs/meetings.md](docs/meetings.md).
 
 Föreningsadmin skriver inte protokollet. Sekreteraren ansvarar för innehållet och kan när protokollet är färdigt ladda upp filen till rätt sparat möte.
 
-I Sprint 8 tillåts ett dokument av typen `protocol` per möte. PDF, DOCX och ODT stöds. PDF rekommenderas för slutarkiv och kan öppnas direkt i webbläsaren.
+PDF, DOCX och ODT stöds för protokoll. PDF rekommenderas för slutarkiv och kan öppnas direkt i webbläsaren.
 
-Dokumentmetadata sparas i mötets `documents`-lista. Själva filen ligger separat under `data/meeting-files/<meeting-id>/`. Ett protokoll kan ersättas eller tas bort utan att själva mötet påverkas.
+Dokumentmetadata sparas i mötets `documents`-lista. Själva filen ligger separat under `data/meeting-files/<meeting-id>/`.
 
 Se [docs/meeting-documents.md](docs/meeting-documents.md).
 
@@ -270,17 +317,7 @@ GOOGLE_ACCOUNT_EMAIL=
 
 Om OAuth-appen står i **Testing** måste kontot som används finnas bland Google-projektets test users.
 
-Valt kalender-ID sparas i:
-
-```text
-data/google-calendar.json
-```
-
-OAuth-token sparas i:
-
-```text
-tokens/google.json
-```
+Valt kalender-ID sparas i `data/google-calendar.json`. OAuth-token sparas i `tokens/google.json`.
 
 ## API
 
@@ -309,6 +346,17 @@ DELETE /api/action-items/:id
 GET    /api/action-items/export.md
 GET    /api/action-items/export.pdf
 
+GET    /api/events
+POST   /api/events
+PUT    /api/events/:id
+DELETE /api/events/:id
+GET    /api/events/export.md
+GET    /api/events/export.pdf
+
+GET  /api/backup/status
+GET  /api/backup/download
+POST /api/backup/restore
+
 GET  /api/agenda/template
 POST /api/agenda/preview
 POST /api/agenda/pdf
@@ -330,7 +378,7 @@ POST /api/google/calendar/events
 
 ## Säkerhet
 
-Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter, föreningens lokala mötesdata, åtgärdslista och mötesdokument ska aldrig checkas in i Git.
+Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter, föreningens lokala mötesdata, kalendarium, åtgärdslista, backupfiler och mötesdokument ska aldrig checkas in i Git.
 
 Projektets `.gitignore` skyddar bland annat:
 
@@ -339,8 +387,9 @@ Projektets `.gitignore` skyddar bland annat:
 - `tokens/`
 - `secrets/`
 - `data/*`
+- `backups/`
 - lokala databaser
 
 Kontrollera alltid `git status` innan push.
 
-Administrations-API:t är i nuläget avsett för en lokal installation. Om Föreningsadmin senare exponeras publikt måste administrationsfunktionerna och dokumentåtkomsten skyddas med autentisering och behörighetskontroll.
+Administrations-API:t är i nuläget avsett för en lokal installation. Om Föreningsadmin senare exponeras publikt måste administrationsfunktionerna, backupfunktionerna och dokumentåtkomsten skyddas med autentisering och behörighetskontroll.
