@@ -1,3 +1,4 @@
+import path from "node:path";
 import express from "express";
 import { loadConfig } from "./config/load-config.mjs";
 import {
@@ -36,6 +37,7 @@ import {
   listWritableCalendars,
   saveSelectedCalendarId
 } from "./google/calendar.mjs";
+import { frontendDistDir } from "./runtime/paths.mjs";
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -357,6 +359,16 @@ app.post("/api/meetings/preview", async (req, res) => {
   }
 });
 
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(frontendDistDir, { index: false }));
+  app.get("/{*splat}", (req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
+    res.sendFile(path.join(frontendDistDir, "index.html"), (error) => {
+      if (error) next(error);
+    });
+  });
+}
+
 app.listen(port, () => {
-  console.log(`Föreningsadmin backend lyssnar på http://localhost:${port}`);
+  console.log(`Föreningsadmin lyssnar på http://0.0.0.0:${port}`);
 });
