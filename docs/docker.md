@@ -46,7 +46,7 @@ Produktionsmiljön läser miljövariabler från:
 runtime/.env
 ```
 
-Filen ligger utanför imagen och versionshanteras aldrig.
+Filen ligger utanför imagen och versionshanteras aldrig. `docker.env.example` är en säker mall som kan kopieras när installationen skapas.
 
 Exempel:
 
@@ -69,7 +69,7 @@ Från repo-roten:
 
 ```bash
 mkdir -p runtime/{data,tokens,backups,config,.tmp}
-cp .env.example runtime/.env
+cp docker.env.example runtime/.env
 ```
 
 På en vanlig Linux-värd där containern kör som UID/GID 1000:
@@ -183,9 +183,10 @@ https://foreningsadmin.example.se/api/google/oauth/callback
 ## Dockerfiler
 
 ```text
-Dockerfile       multi-stage build för frontend + backend
-compose.yaml     produktionskörning och persistent state
-.dockerignore    hindrar data, hemligheter och lokala filer från build context
+Dockerfile          multi-stage build för frontend + backend
+compose.yaml        produktionskörning och persistent state
+docker.env.example  mall för runtime/.env
+.dockerignore       hindrar data, hemligheter och lokala filer från build context
 ```
 
 `config/board.json`, `.env`, `data/`, `tokens/`, `backups/` och `runtime/` får aldrig bakas in i eller committas tillsammans med imagen.
