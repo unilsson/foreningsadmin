@@ -34,6 +34,7 @@ RUN npm ci --omit=dev \
 COPY backend/src ./backend/src
 COPY config ./config
 COPY templates ./templates
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 # Existing application code uses these historic project-root paths. In the
@@ -60,4 +61,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 
+ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]
 CMD ["node", "backend/src/server.mjs"]
