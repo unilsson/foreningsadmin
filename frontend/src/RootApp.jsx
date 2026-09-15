@@ -16,8 +16,9 @@ export default function RootApp() {
     return <ShellRoute><MeetingArchive /></ShellRoute>;
   }
 
-  if (/^\/meetings\/[0-9a-f-]{36}$/i.test(location.pathname)) {
-    return <ShellRoute><MeetingDetail /></ShellRoute>;
+  const meetingMatch = location.pathname.match(/^\/meetings\/([0-9a-f-]{36})$/i);
+  if (meetingMatch) {
+    return <ShellRoute><MeetingDetail meetingId={meetingMatch[1]} /></ShellRoute>;
   }
 
   return <App />;
