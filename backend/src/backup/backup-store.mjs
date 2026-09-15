@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDir, "../../..");
 const dataDir = path.join(projectRoot, "data");
+const legacyBoardFile = path.join(projectRoot, "config", "board.json");
 const backupsDir = path.join(projectRoot, "backups");
 const tempDir = path.join(projectRoot, ".tmp");
 
@@ -65,8 +66,21 @@ async function walkFiles(directory, root = directory) {
   return files;
 }
 
+async function sourceFiles() {
+  const files = (await walkFiles(dataDir, projectRoot)).map((file) => ({
+    fullPath: file.fullPath,
+    relativePath: file.relativePath
+  }));
+
+  if (await exists(legacyBoardFile)) {
+    files.push({ fullPath: legacyBoardFile, relativePath: "config/board.json" });
+  }
+
+  return files;
+}
+
 export async function getBackupStatus() {
-  const files = await walkFiles(dataDir);
+  const files = await sourceFiles();
   let totalBytes = 0;
   for (const file of files) {
     totalBytes += (await stat(file.fullPath)).size;
@@ -74,17 +88,17 @@ export async function getBackupStatus() {
   return {
     fileCount: files.length,
     totalBytes,
-    includes: "data/",
+    includes: ["data/", ...(files.some((file) => file.relativePath === "config/board.json") ? ["config/board.json"] : [])],
     excludesSecrets: true
   };
 }
 
 export async function createBackupDocument() {
-  const sourceFiles = await walkFiles(dataDir);
+  const sources = await sourceFiles();
   const files = [];
   let totalBytes = 0;
 
-  for (const file of sourceFiles) {
+  for (const file of sources) {
     const buffer = await readFile(file.fullPath);
     totalBytes += buffer.length;
     files.push({
@@ -101,26 +115,26 @@ export async function createBackupDocument() {
     version: BACKUP_VERSION,
     application: "Föreningsadmin",
     createdAt: new Date().toISOString(),
-    scope: "data",
+    scope: "local-data",
     fileCount: files.length,
     totalBytes,
     files
   };
 }
 
-function safeRelativePath(value) {
+function safeBackupPath(value) {
   if (typeof value !== "string" || !value || value.length > 512) return false;
   if (value.includes("\\") || value.startsWith("/") || value.includes("\0")) return false;
   const normalized = path.posix.normalize(value);
   if (normalized !== value || normalized === "." || normalized.startsWith("../") || normalized.includes("/../")) return false;
-  return true;
+  return normalized.startsWith("data/") || normalized === "config/board.json";
 }
 
 export function validateBackupDocument(document) {
   if (!document || typeof document !== "object") throw new Error("Backupfilen innehåller inte giltig JSON-data.");
   if (document.format !== BACKUP_FORMAT) throw new Error("Filen är inte en Föreningsadmin-backup.");
   if (document.version !== BACKUP_VERSION) throw new Error(`Backupversion ${document.version ?? "okänd"} stöds inte.`);
-  if (document.scope !== "data") throw new Error("Backupfilen har ett okänt dataomfång.");
+  if (document.scope !== "local-data") throw new Error("Backupfilen har ett okänt dataomfång.");
   if (!Array.isArray(document.files)) throw new Error("Backupfilen saknar fillista.");
   if (document.files.length > MAX_FILE_COUNT) throw new Error("Backupfilen innehåller för många filer.");
 
@@ -129,7 +143,7 @@ export function validateBackupDocument(document) {
   let totalBytes = 0;
 
   for (const file of document.files) {
-    if (!safeRelativePath(file?.path)) throw new Error("Backupfilen innehåller en ogiltig filsökväg.");
+    if (!safeBackupPath(file?.path)) throw new Error("Backupfilen innehåller en ogiltig filsökväg.");
     if (seen.has(file.path)) throw new Error(`Backupfilen innehåller filen ${file.path} flera gånger.`);
     seen.add(file.path);
     if (file.encoding !== "base64" || typeof file.data !== "string") {
@@ -172,37 +186,61 @@ export async function restoreBackupDocument(document) {
   const validated = validateBackupDocument(document);
   const stagingRoot = path.join(tempDir, `restore-${randomUUID()}`);
   const stagingData = path.join(stagingRoot, "data");
+  const stagingLegacyBoard = path.join(stagingRoot, "config", "board.json");
   await mkdir(stagingData, { recursive: true });
 
   try {
     for (const file of validated.files) {
-      const destination = path.join(stagingData, ...file.path.split("/"));
+      const destination = path.join(stagingRoot, ...file.path.split("/"));
       await mkdir(path.dirname(destination), { recursive: true });
       await writeFile(destination, file.buffer);
     }
 
+    // data/.gitkeep is tracked in Git and should remain present after a restore.
+    await writeFile(path.join(stagingData, ".gitkeep"), "", "utf8");
+
     await mkdir(backupsDir, { recursive: true });
     const safetyName = `pre-restore-${timestampForPath()}`;
-    const safetyPath = path.join(backupsDir, safetyName);
+    const safetyRoot = path.join(backupsDir, safetyName);
+    const safetyData = path.join(safetyRoot, "data");
+    const safetyLegacyBoard = path.join(safetyRoot, "config", "board.json");
     const hadExistingData = await exists(dataDir);
+    const hadLegacyBoard = await exists(legacyBoardFile);
+    const hasRestoredLegacyBoard = await exists(stagingLegacyBoard);
 
-    if (hadExistingData) await rename(dataDir, safetyPath);
+    await mkdir(safetyRoot, { recursive: true });
+    if (hadExistingData) await rename(dataDir, safetyData);
+    if (hadLegacyBoard) {
+      await mkdir(path.dirname(safetyLegacyBoard), { recursive: true });
+      await rename(legacyBoardFile, safetyLegacyBoard);
+    }
 
     try {
       await rename(stagingData, dataDir);
+      if (hasRestoredLegacyBoard) {
+        await mkdir(path.dirname(legacyBoardFile), { recursive: true });
+        await rename(stagingLegacyBoard, legacyBoardFile);
+      }
     } catch (error) {
-      if (hadExistingData && !(await exists(dataDir)) && await exists(safetyPath)) {
-        await rename(safetyPath, dataDir);
+      await rm(dataDir, { recursive: true, force: true });
+      await rm(legacyBoardFile, { force: true });
+      if (hadExistingData && await exists(safetyData)) await rename(safetyData, dataDir);
+      if (hadLegacyBoard && await exists(safetyLegacyBoard)) {
+        await mkdir(path.dirname(legacyBoardFile), { recursive: true });
+        await rename(safetyLegacyBoard, legacyBoardFile);
       }
       throw error;
     }
 
     await rm(stagingRoot, { recursive: true, force: true });
+    const hadPreviousLocalData = hadExistingData || hadLegacyBoard;
+    if (!hadPreviousLocalData) await rm(safetyRoot, { recursive: true, force: true });
+
     return {
       restoredFrom: validated.createdAt,
       fileCount: validated.fileCount,
       totalBytes: validated.totalBytes,
-      safetyBackup: hadExistingData ? safetyName : null
+      safetyBackup: hadPreviousLocalData ? safetyName : null
     };
   } catch (error) {
     await rm(stagingRoot, { recursive: true, force: true });
