@@ -1,5 +1,18 @@
 # Changelog
 
+## Sprint 9 – Åtgärdslista
+
+- Ny sida **Åtgärder → Åtgärdslista**.
+- Åtgärdspunkter sparas strukturerat i `data/action-items.json`.
+- Synliga åtgärdsnummer i formatet `ÅÅ-NNN` kan anges eller skapas automatiskt.
+- Stöd för flera ansvariga, beslutstext, deadline, kommentar och möteskoppling.
+- Status stöder Ej påbörjad, Pågår, Väntar och Klart.
+- Klara punkter visas automatiskt under Avslutade åtgärder utan separat lagring.
+- Åtgärdslistan kan exporteras till Markdown och PDF.
+- Äldre Markdown-listor i föreningens tidigare tabellformat kan importeras med ett lokalt migreringsskript.
+- API för skapa, ändra, ta bort och exportera åtgärdspunkter.
+- Datamodell och arbetsflöde dokumenteras i `docs/action-items.md`.
+
 ## Sprint 8 – Mötesdokument och protokollarkiv
 
 - Sparade möten kan få ett färdigt protokoll kopplat till sig.
