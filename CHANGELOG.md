@@ -1,5 +1,17 @@
 # Changelog
 
+## Sprint 7 – Sparade möten och mötesarkiv
+
+- Ny sida **Möten → Mötesarkiv**.
+- Styrelsemöten kan sparas permanent och öppnas igen senare.
+- Varje möte får ett stabilt UUID och sparas lokalt under `data/meetings/`.
+- Mötesstatus stöder Planerat, Genomfört och Inställt.
+- Mötesuppgifter och dagordning sparas tillsammans som ett mötesobjekt.
+- Sparade möten kan öppnas för fortsatt redigering av mötesuppgifter eller dagordning.
+- Möten kan tas bort från arkivet efter bekräftelse.
+- Backend har CRUD-API under `/api/saved-meetings`.
+- Mötesarkivet och lagringsmodellen dokumenteras i `docs/meetings.md`.
+
 ## Sprint 6 – Styrelseadministration
 
 - Ny sida **Administration → Styrelse**.
