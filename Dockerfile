@@ -21,14 +21,16 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-# Install only the backend runtime dependencies. The React/Vite frontend is
-# already compiled in the build stage and does not need npm packages at runtime.
-WORKDIR /app/backend
-COPY backend/package.json ./package.json
-RUN npm install --omit=dev --ignore-scripts \
+# Use the repository lockfile in the runtime stage as well. This installs the
+# backend runtime packages deterministically. Some frontend packages remain
+# because they are currently declared as production workspace dependencies;
+# the browser still uses only the compiled frontend/dist files below.
+COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/package.json
+COPY backend/package.json ./backend/package.json
+RUN npm ci --omit=dev \
     && npm cache clean --force
 
-WORKDIR /app
 COPY backend/src ./backend/src
 COPY config ./config
 COPY templates ./templates
