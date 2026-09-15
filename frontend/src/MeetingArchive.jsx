@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const WORKSPACE_KEY = "foreningsadmin.meetingWorkspace";
+const MAX_PROTOCOL_SIZE = 20 * 1024 * 1024;
 
 const statusLabels = {
   planned: "Planerat",
@@ -20,6 +21,17 @@ function formatDate(value) {
         month: "long",
         year: "numeric"
       }).format(date);
+}
+
+function getProtocol(record) {
+  return (record?.documents ?? []).find((document) => document.type === "protocol") ?? null;
+}
+
+function formatFileSize(size) {
+  const bytes = Number(size ?? 0);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
 }
 
 export function MeetingArchive() {
@@ -47,7 +59,8 @@ export function MeetingArchive() {
   const counts = useMemo(() => ({
     planned: meetings.filter((item) => item.status === "planned").length,
     completed: meetings.filter((item) => item.status === "completed").length,
-    cancelled: meetings.filter((item) => item.status === "cancelled").length
+    cancelled: meetings.filter((item) => item.status === "cancelled").length,
+    protocols: meetings.filter((item) => getProtocol(item)).length
   }), [meetings]);
 
   function startNewMeeting() {
@@ -60,7 +73,7 @@ export function MeetingArchive() {
       <header className="page-heading meeting-archive-heading">
         <p className="eyebrow">Möten</p>
         <h1>Mötesarkiv</h1>
-        <p>Sparade styrelsemöten ligger kvar mellan arbetstillfällen och kan öppnas igen för redigering.</p>
+        <p>Sparade styrelsemöten, dagordningar och färdiga protokoll samlas på samma ställe.</p>
       </header>
 
       <section className="meeting-archive-toolbar">
@@ -68,6 +81,7 @@ export function MeetingArchive() {
           <span><strong>{counts.planned}</strong> planerade</span>
           <span><strong>{counts.completed}</strong> genomförda</span>
           <span><strong>{counts.cancelled}</strong> inställda</span>
+          <span><strong>{counts.protocols}</strong> med protokoll</span>
         </div>
         <button type="button" onClick={startNewMeeting}>+ Nytt styrelsemöte</button>
       </section>
@@ -84,21 +98,33 @@ export function MeetingArchive() {
 
       {!loading && meetings.length > 0 && (
         <div className="meeting-archive-list">
-          {meetings.map((record) => (
-            <Link className="meeting-archive-item" to={`/meetings/${record.id}`} key={record.id}>
-              <div className="meeting-archive-date">
-                <strong>{formatDate(record.meeting?.date)}</strong>
-                <span>{record.meeting?.startTime}–{record.meeting?.endTime}</span>
-              </div>
-              <div className="meeting-archive-location">
-                <span>{record.meeting?.location || "Plats saknas"}</span>
-                <small>Senast ändrad {new Date(record.updatedAt).toLocaleString("sv-SE")}</small>
-              </div>
-              <span className={`meeting-status status-${record.status}`}>
-                {statusLabels[record.status] ?? record.status}
-              </span>
-            </Link>
-          ))}
+          {meetings.map((record) => {
+            const protocol = getProtocol(record);
+            return (
+              <Link className="meeting-archive-item" to={`/meetings/${record.id}`} key={record.id}>
+                <div className="meeting-archive-date">
+                  <strong>{formatDate(record.meeting?.date)}</strong>
+                  <span>{record.meeting?.startTime}–{record.meeting?.endTime}</span>
+                </div>
+                <div className="meeting-archive-location">
+                  <span>{record.meeting?.location || "Plats saknas"}</span>
+                  <small>Senast ändrad {new Date(record.updatedAt).toLocaleString("sv-SE")}</small>
+                </div>
+                <div className="meeting-archive-badges">
+                  <span className={`meeting-status status-${record.status}`}>
+                    {statusLabels[record.status] ?? record.status}
+                  </span>
+                  <span className={`protocol-status ${protocol ? "has-protocol" : record.status === "completed" ? "missing-protocol" : "no-protocol"}`}>
+                    {protocol
+                      ? "✓ Protokoll"
+                      : record.status === "completed"
+                        ? "⚠ Protokoll saknas"
+                        : "– Inget protokoll"}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </>
@@ -111,6 +137,10 @@ export function MeetingDetail({ meetingId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [uploadingProtocol, setUploadingProtocol] = useState(false);
+  const [deletingProtocol, setDeletingProtocol] = useState(false);
+  const [documentMessage, setDocumentMessage] = useState("");
+  const [documentError, setDocumentError] = useState("");
 
   useEffect(() => {
     async function loadMeeting() {
@@ -134,8 +164,73 @@ export function MeetingDetail({ meetingId }) {
     window.location.assign(target);
   }
 
+  async function uploadProtocol(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const currentProtocol = getProtocol(record);
+    if (currentProtocol && !window.confirm("Ersätta det befintliga protokollet med den valda filen?")) {
+      input.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PROTOCOL_SIZE) {
+      setDocumentError("Protokollet får vara högst 20 MB.");
+      input.value = "";
+      return;
+    }
+
+    setUploadingProtocol(true);
+    setDocumentMessage("");
+    setDocumentError("");
+
+    try {
+      const response = await fetch(`/api/saved-meetings/${meetingId}/documents/protocol`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "X-File-Name": encodeURIComponent(file.name)
+        },
+        body: file
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Protokollet kunde inte laddas upp.");
+
+      setRecord(data.meeting);
+      setDocumentMessage(currentProtocol ? "Protokollet är ersatt." : "Protokollet är uppladdat och kopplat till mötet.");
+    } catch (uploadError) {
+      setDocumentError(uploadError.message);
+    } finally {
+      setUploadingProtocol(false);
+      input.value = "";
+    }
+  }
+
+  async function deleteProtocol() {
+    if (!window.confirm("Ta bort protokollet från mötet? Själva mötet finns kvar.")) return;
+
+    setDeletingProtocol(true);
+    setDocumentMessage("");
+    setDocumentError("");
+
+    try {
+      const response = await fetch(`/api/saved-meetings/${meetingId}/documents/protocol`, {
+        method: "DELETE"
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Protokollet kunde inte tas bort.");
+      setRecord(data.meeting);
+      setDocumentMessage("Protokollet är borttaget från mötet.");
+    } catch (deleteError) {
+      setDocumentError(deleteError.message);
+    } finally {
+      setDeletingProtocol(false);
+    }
+  }
+
   async function deleteMeeting() {
-    if (!window.confirm("Ta bort mötet permanent från mötesarkivet?")) return;
+    if (!window.confirm("Ta bort mötet permanent från mötesarkivet? Eventuella mötesdokument tas också bort.")) return;
     setDeleting(true);
     setError("");
 
@@ -160,6 +255,8 @@ export function MeetingDetail({ meetingId }) {
     ...(record.agenda?.meetingItems ?? []),
     ...(record.agenda?.afterMeetingItems ?? [])
   ];
+  const protocol = getProtocol(record);
+  const protocolUrl = `/api/saved-meetings/${meetingId}/documents/protocol`;
 
   return (
     <>
@@ -204,6 +301,65 @@ export function MeetingDetail({ meetingId }) {
         ) : (
           <p className="muted">Mötet har ingen sparad dagordning ännu.</p>
         )}
+      </section>
+
+      <section className="card meeting-documents-card">
+        <div className="saved-meeting-title-row">
+          <div>
+            <p className="eyebrow">Dokument</p>
+            <h2>Protokoll</h2>
+            <p className="muted">Sekreterarens färdiga protokoll kan sparas här som PDF, DOCX eller ODT.</p>
+          </div>
+          <span className={`protocol-status ${protocol ? "has-protocol" : "no-protocol"}`}>
+            {protocol ? "✓ Protokoll finns" : "Protokoll saknas"}
+          </span>
+        </div>
+
+        {protocol ? (
+          <article className="protocol-document">
+            <div className="protocol-file-info">
+              <strong>{protocol.originalFilename}</strong>
+              <span>
+                {formatFileSize(protocol.size)} · uppladdat {new Date(protocol.uploadedAt).toLocaleString("sv-SE")}
+              </span>
+            </div>
+            <div className="protocol-actions">
+              {protocol.mimeType === "application/pdf" && (
+                <a className="button-link" href={protocolUrl} target="_blank" rel="noreferrer">Öppna</a>
+              )}
+              <a className="button-link secondary" href={`${protocolUrl}?download=1`}>Hämta</a>
+              <label className="button-link secondary file-upload-button">
+                {uploadingProtocol ? "Laddar upp…" : "Ersätt"}
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text"
+                  onChange={uploadProtocol}
+                  disabled={uploadingProtocol}
+                />
+              </label>
+              <button type="button" className="danger-button" onClick={deleteProtocol} disabled={deletingProtocol}>
+                {deletingProtocol ? "Tar bort…" : "Ta bort"}
+              </button>
+            </div>
+          </article>
+        ) : (
+          <div className="protocol-upload-empty">
+            <p>Inget protokoll har lagts till för det här mötet ännu.</p>
+            <label className="button-link file-upload-button">
+              {uploadingProtocol ? "Laddar upp…" : "Ladda upp protokoll"}
+              <input
+                type="file"
+                accept=".pdf,.docx,.odt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text"
+                onChange={uploadProtocol}
+                disabled={uploadingProtocol}
+              />
+            </label>
+            <small>PDF rekommenderas för det slutliga arkivet. Max 20 MB.</small>
+          </div>
+        )}
+
+        {documentMessage && <p className="meeting-save-message">{documentMessage}</p>}
+        {documentError && <div className="errors" role="alert">{documentError}</div>}
       </section>
 
       <section className="meeting-danger-zone">
