@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Dependencies and build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+
+# Local runtime data and secrets
+.env
+.env.*
+!.env.example
+runtime/
+data/
+tokens/
+backups/
+secrets/
+config/board.json
+credentials.json
+*.token.json
+
+# Local databases and logs
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.log
+logs/
+
+# Temporary/editor/OS files
+.tmp/
+tmp/
+.cache/
+.vscode/
+.idea/
+*~
+\#*\#
+.#*
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
