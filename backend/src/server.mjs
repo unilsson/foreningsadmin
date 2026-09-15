@@ -10,6 +10,7 @@ import { createMeetingPreview } from "./meetings/preview.mjs";
 import { createMeetingArchiveRouter } from "./meetings/archive-router.mjs";
 import { createActionItemsRouter } from "./actions/action-router.mjs";
 import { createEventsRouter } from "./events/event-router.mjs";
+import { createBackupRouter } from "./backup/backup-router.mjs";
 import { renderTemplate } from "./templates/render.mjs";
 import { createAgendaPreview, loadAgendaTemplate } from "./agenda/agenda.mjs";
 import { streamAgendaPdf } from "./agenda/pdf.mjs";
@@ -43,6 +44,7 @@ const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 const config = await loadConfig();
 const factoryAgendaTemplate = await loadAgendaTemplate();
 
+app.use("/api/backup", createBackupRouter());
 app.use(express.json());
 app.use("/api/saved-meetings", createMeetingArchiveRouter(config));
 app.use("/api/action-items", createActionItemsRouter());
