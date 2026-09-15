@@ -1,5 +1,17 @@
 # Changelog
 
+## Sprint 8 – Mötesdokument och protokollarkiv
+
+- Sparade möten kan få ett färdigt protokoll kopplat till sig.
+- Protokoll kan laddas upp som PDF, DOCX eller ODT, max 20 MB.
+- PDF-protokoll kan öppnas direkt i webbläsaren och alla format kan hämtas.
+- Ett befintligt protokoll kan ersättas efter bekräftelse eller tas bort utan att mötet tas bort.
+- Dokumentmetadata sparas i mötesobjektets `documents`-lista.
+- Själva dokumentfilen sparas separat under `data/meeting-files/<meeting-id>/`.
+- Mötesarkivet visar om protokoll finns och varnar när ett genomfört möte saknar protokoll.
+- När ett möte tas bort raderas även dess dokumentkatalog.
+- Dokumentlagringen är generell för att senare kunna utökas med andra möteshandlingar.
+
 ## Sprint 7 – Sparade möten och mötesarkiv
 
 - Ny sida **Möten → Mötesarkiv**.
