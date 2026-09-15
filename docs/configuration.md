@@ -34,6 +34,7 @@ data/agenda-history.jsonl
 data/board.json
 data/board-history.jsonl
 data/google-calendar.json
+data/action-items.json
 data/meetings/
 data/meeting-files/
 ```
@@ -41,6 +42,8 @@ data/meeting-files/
 `data/agenda.json` innehåller den aktiva dagordningsmallen när någon har ändrat den via webbappen. Om filen saknas används `config/agenda.json`.
 
 `data/board.json` innehåller den aktiva styrelsen. En äldre lokal `config/board.json` kan fortfarande användas som fallback tills styrelsen har sparats från administrationssidan.
+
+`data/action-items.json` innehåller föreningens strukturerade åtgärdslista. Markdown och PDF genereras från denna fil och är exportformat, inte primär datakälla.
 
 `data/meetings/` innehåller ett separat JSON-dokument per sparat styrelsemöte.
 
@@ -83,8 +86,8 @@ config/board.json     # äldre lokal installation, om filen finns
 
 ## Backup
 
-Eftersom lokal föreningsdata under `data/` inte finns i Git måste installationens `data/` tas med i vanlig lokal backup. GitHub-repot räcker alltså inte som backup av mötesarkiv, protokoll, styrelseuppgifter eller aktiva inställningar.
+Eftersom lokal föreningsdata under `data/` inte finns i Git måste installationens `data/` tas med i vanlig lokal backup. GitHub-repot räcker alltså inte som backup av mötesarkiv, protokoll, åtgärdslista, styrelseuppgifter eller aktiva inställningar.
 
-För ett komplett mötesarkiv måste både `data/meetings/` och `data/meeting-files/` finnas med i backupen.
+För ett komplett mötesarkiv måste både `data/meetings/` och `data/meeting-files/` finnas med i backupen. Åtgärdslistan finns i `data/action-items.json` och ska också omfattas av samma backup.
 
 OAuth-token ligger separat under `tokens/` och ska hanteras som en hemlighet i backup och återställning.
