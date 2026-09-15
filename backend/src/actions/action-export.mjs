@@ -89,6 +89,7 @@ export function renderActionItemsMarkdown({ items, updatedAt }) {
 }
 
 function renderItem(doc, item) {
+  if (doc.y > 675) doc.addPage();
   const status = STATUS_LABELS[item.status] ?? item.status;
   doc.font("Helvetica-Bold").fontSize(11).text(`${item.number}  ${item.title}`);
   doc.moveDown(0.25);
@@ -125,17 +126,14 @@ export function streamActionItemsPdf(output, { items, updatedAt }) {
   }
 
   const completed = sorted(items, true);
-  if (doc.y > 640) doc.addPage();
+  if (doc.y > 620) doc.addPage();
   doc.moveDown(0.4);
   doc.font("Helvetica-Bold").fontSize(15).text("Avslutade åtgärder");
   doc.moveDown(0.7);
   if (!completed.length) {
     doc.font("Helvetica").fontSize(10).text("Inga avslutade åtgärder.");
   } else {
-    for (const item of completed) {
-      if (doc.y > 690) doc.addPage();
-      renderItem(doc, item);
-    }
+    for (const item of completed) renderItem(doc, item);
   }
 
   doc.end();
