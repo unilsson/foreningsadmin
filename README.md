@@ -2,7 +2,7 @@
 
 Ett enkelt webbverktyg för återkommande administration i Haninge Hembygdsgille.
 
-Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar och föreningens styrelseuppgifter. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
+Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagordningar, styrelseuppgifter och mötesdokument. Målet är att sådant som föreningen behöver ändra i vardagen ska kunna administreras från webbgränssnittet utan att någon behöver redigera källkod.
 
 ## Status
 
@@ -59,6 +59,16 @@ Appen hanterar styrelsemöten, mötesarkiv, Google Calendar-inbjudningar, dagord
 - separata mötesfiler under `data/meetings/`
 - sparade möten kan tas bort efter bekräftelse
 
+### Sprint 8 – mötesdokument och protokollarkiv
+
+- ett färdigt protokoll kan kopplas till varje sparat möte
+- stöd för PDF, DOCX och ODT, max 20 MB
+- PDF kan öppnas direkt i webbläsaren
+- protokoll kan hämtas, ersättas eller tas bort
+- mötesarkivet visar om protokoll finns eller saknas
+- dokumentmetadata sparas i mötesobjektet och själva filen under `data/meeting-files/`
+- lagringsmodellen är förberedd för fler dokumenttyper senare
+
 Se även [CHANGELOG.md](CHANGELOG.md).
 
 ## Struktur
@@ -79,11 +89,13 @@ foreningsadmin/
 │   ├── board.example.json
 │   └── defaults.json
 ├── data/
-│   └── meetings/
+│   ├── meetings/
+│   └── meeting-files/
 ├── docs/
 │   ├── agenda.md
 │   ├── board.md
 │   ├── configuration.md
+│   ├── meeting-documents.md
 │   ├── meetings.md
 │   └── navigation.md
 ├── frontend/
@@ -132,7 +144,7 @@ De viktigaste sidorna är:
 ```text
 /                       Start
 /meetings               Mötesarkiv
-/meetings/:meetingId    Sparat möte
+/meetings/:meetingId    Sparat möte och dess dokument
 /meetings/new           Styrelsemöte
 /agenda                 Dagordning
 /admin/board            Styrelse
@@ -149,23 +161,34 @@ Programstandard som är säker att publicera ligger under `config/` och versions
 Exempel:
 
 ```text
-data/agenda.json              aktiv dagordningsmall
-data/agenda-history.jsonl     historik för dagordningsmallen
-data/board.json               aktuell styrelse
-data/board-history.jsonl      historik för styrelsen
-data/google-calendar.json     valt Google Calendar-ID
-data/meetings/<uuid>.json      sparade möten
+data/agenda.json                         aktiv dagordningsmall
+data/agenda-history.jsonl                historik för dagordningsmallen
+data/board.json                          aktuell styrelse
+data/board-history.jsonl                 historik för styrelsen
+data/google-calendar.json                valt Google Calendar-ID
+data/meetings/<uuid>.json                 sparade möten och dokumentmetadata
+data/meeting-files/<uuid>/<fil>           mötesdokument
 ```
 
-Mer information finns i [docs/configuration.md](docs/configuration.md) och [docs/meetings.md](docs/meetings.md).
+Mer information finns i [docs/configuration.md](docs/configuration.md), [docs/meetings.md](docs/meetings.md) och [docs/meeting-documents.md](docs/meeting-documents.md).
 
 ## Mötesarkiv
 
-Ett sparat möte innehåller datum, tid, plats, status och sin dagordning. Varje möte får ett stabilt UUID och sparas som ett separat JSON-dokument i `data/meetings/`.
+Ett sparat möte innehåller datum, tid, plats, status, sin dagordning och metadata om kopplade dokument. Varje möte får ett stabilt UUID och sparas som ett separat JSON-dokument i `data/meetings/`.
 
 Från mötesarkivet kan ett möte öppnas och sedan skickas tillbaka till mötes- eller dagordningsarbetsytan för fortsatt redigering. Den permanenta filen ändras först när användaren sparar.
 
 Se [docs/meetings.md](docs/meetings.md).
+
+## Mötesdokument och protokoll
+
+Föreningsadmin skriver inte protokollet. Sekreteraren ansvarar för innehållet och kan när protokollet är färdigt ladda upp filen till rätt sparat möte.
+
+I Sprint 8 tillåts ett dokument av typen `protocol` per möte. PDF, DOCX och ODT stöds. PDF rekommenderas för slutarkiv och kan öppnas direkt i webbläsaren.
+
+Dokumentmetadata sparas i mötets `documents`-lista. Själva filen ligger separat under `data/meeting-files/<meeting-id>/`. Ett protokoll kan ersättas eller tas bort utan att själva mötet påverkas.
+
+Se [docs/meeting-documents.md](docs/meeting-documents.md).
 
 ## Dagordning
 
@@ -244,6 +267,10 @@ GET    /api/saved-meetings/:id
 PUT    /api/saved-meetings/:id
 DELETE /api/saved-meetings/:id
 
+PUT    /api/saved-meetings/:id/documents/protocol
+GET    /api/saved-meetings/:id/documents/protocol
+DELETE /api/saved-meetings/:id/documents/protocol
+
 GET  /api/agenda/template
 POST /api/agenda/preview
 POST /api/agenda/pdf
@@ -265,7 +292,7 @@ POST /api/google/calendar/events
 
 ## Säkerhet
 
-Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter och föreningens lokala mötesdata ska aldrig checkas in i Git.
+Riktiga nycklar, OAuth-tokens, lösenord, privata kontaktuppgifter, föreningens lokala mötesdata och mötesdokument ska aldrig checkas in i Git.
 
 Projektets `.gitignore` skyddar bland annat:
 
@@ -278,4 +305,4 @@ Projektets `.gitignore` skyddar bland annat:
 
 Kontrollera alltid `git status` innan push.
 
-Administrations-API:t är i nuläget avsett för en lokal installation. Om Föreningsadmin senare exponeras publikt måste administrationsfunktionerna skyddas med autentisering och behörighetskontroll.
+Administrations-API:t är i nuläget avsett för en lokal installation. Om Föreningsadmin senare exponeras publikt måste administrationsfunktionerna och dokumentåtkomsten skyddas med autentisering och behörighetskontroll.
