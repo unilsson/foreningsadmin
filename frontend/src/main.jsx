@@ -1,15 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import App from "./App.jsx";
+import RootApp from "./RootApp.jsx";
 import "./styles.css";
 import "./admin.css";
 import "./shell.css";
+import "./board-admin.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <RootApp />
     </BrowserRouter>
   </React.StrictMode>
 );
