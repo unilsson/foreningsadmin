@@ -3,6 +3,8 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 import AgendaTemplateAdmin from "./AgendaTemplateAdmin.jsx";
 import AppShell from "./AppShell.jsx";
 
+const WORKSPACE_KEY = "foreningsadmin.meetingWorkspace";
+
 const emptyForm = {
   date: "",
   startTime: "",
@@ -32,6 +34,10 @@ export default function App() {
   const [agendaTemplate, setAgendaTemplate] = useState(null);
   const [agendaDraft, setAgendaDraft] = useState(emptyAgenda);
   const [agendaPreview, setAgendaPreview] = useState(null);
+  const [currentMeetingId, setCurrentMeetingId] = useState(null);
+  const [meetingStatus, setMeetingStatus] = useState("planned");
+  const [meetingSaveMessage, setMeetingSaveMessage] = useState("");
+  const [savingMeeting, setSavingMeeting] = useState(false);
 
   async function refreshGoogleStatus() {
     try {
@@ -57,6 +63,10 @@ export default function App() {
 
   useEffect(() => {
     async function loadInitialData() {
+      const params = new URLSearchParams(window.location.search);
+      const startNew = params.get("new") === "1";
+      if (startNew) window.sessionStorage.removeItem(WORKSPACE_KEY);
+
       try {
         const [healthResponse, configResponse, agendaResponse] = await Promise.all([
           fetch("/api/health"),
@@ -70,26 +80,49 @@ export default function App() {
 
         setBackendOk(Boolean(health.ok));
         setOrganisationName(config.organisation?.name ?? "Förening");
-        setForm((current) => ({
-          ...current,
+
+        const defaultForm = {
+          date: "",
           startTime: config.meeting?.startTime ?? "",
           endTime: config.meeting?.endTime ?? "",
           location: config.meeting?.location ?? ""
-        }));
-        setAgendaTemplate(agenda);
-        setAgendaDraft({
+        };
+        const defaultAgenda = {
           title: agenda.title ?? "Dagordning",
           beforeMeetingItems: agenda.beforeMeetingItems ?? [],
           meetingItems: [],
           afterMeetingItems: agenda.afterMeetingItems ?? []
-        });
+        };
+
+        setForm(defaultForm);
+        setAgendaTemplate(agenda);
+        setAgendaDraft(defaultAgenda);
+
+        if (!startNew) {
+          const workspace = loadWorkspace();
+          if (workspace?.id && workspace?.meeting) {
+            setCurrentMeetingId(workspace.id);
+            setMeetingStatus(workspace.status ?? "planned");
+            setForm({
+              date: workspace.meeting.date ?? "",
+              startTime: workspace.meeting.startTime ?? defaultForm.startTime,
+              endTime: workspace.meeting.endTime ?? defaultForm.endTime,
+              location: workspace.meeting.location ?? defaultForm.location
+            });
+            setAgendaDraft({
+              title: workspace.agenda?.title ?? defaultAgenda.title,
+              beforeMeetingItems: workspace.agenda?.beforeMeetingItems ?? defaultAgenda.beforeMeetingItems,
+              meetingItems: workspace.agenda?.meetingItems ?? [],
+              afterMeetingItems: workspace.agenda?.afterMeetingItems ?? defaultAgenda.afterMeetingItems
+            });
+          }
+        }
       } catch {
         setBackendOk(false);
       }
 
       await refreshGoogleStatus();
 
-      const params = new URLSearchParams(window.location.search);
       const googleResult = params.get("google");
       const message = params.get("message");
 
@@ -99,7 +132,7 @@ export default function App() {
         setGoogleMessage(message);
       }
 
-      if (googleResult) {
+      if (googleResult || startNew) {
         window.history.replaceState({}, "", window.location.pathname);
       }
     }
@@ -107,12 +140,65 @@ export default function App() {
     loadInitialData();
   }, []);
 
-  function updateField(event) {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+  function markMeetingChanged() {
+    setMeetingSaveMessage("");
     setPreview(null);
     setAgendaPreview(null);
     setCreatedEvent(null);
+  }
+
+  function updateField(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+    markMeetingChanged();
+  }
+
+  function updateMeetingStatus(event) {
+    setMeetingStatus(event.target.value);
+    setMeetingSaveMessage("");
+  }
+
+  function startNewMeeting() {
+    window.sessionStorage.removeItem(WORKSPACE_KEY);
+    window.location.assign("/meetings/new?new=1");
+  }
+
+  async function saveCurrentMeeting() {
+    setSavingMeeting(true);
+    setMeetingSaveMessage("");
+    setErrors([]);
+
+    try {
+      const isUpdate = Boolean(currentMeetingId);
+      const response = await fetch(
+        isUpdate ? `/api/saved-meetings/${currentMeetingId}` : "/api/saved-meetings",
+        {
+          method: isUpdate ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            meeting: form,
+            agenda: agendaDraft,
+            status: meetingStatus
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrors(data.errors ?? [data.error ?? "Kunde inte spara mötet."]);
+        return;
+      }
+
+      const record = data.meeting;
+      setCurrentMeetingId(record.id);
+      setMeetingStatus(record.status);
+      window.sessionStorage.setItem(WORKSPACE_KEY, JSON.stringify(record));
+      setMeetingSaveMessage(isUpdate ? "Mötet är uppdaterat i mötesarkivet." : "Mötet är sparat i mötesarkivet.");
+    } catch {
+      setErrors(["Kunde inte kontakta backend när mötet skulle sparas."]);
+    } finally {
+      setSavingMeeting(false);
+    }
   }
 
   async function handleMeetingPreview(event) {
@@ -197,6 +283,7 @@ export default function App() {
   function updateAgendaTitle(event) {
     setAgendaDraft((current) => ({ ...current, title: event.target.value }));
     setAgendaPreview(null);
+    setMeetingSaveMessage("");
   }
 
   function updateAgendaItem(section, index, value) {
@@ -207,6 +294,7 @@ export default function App() {
       )
     }));
     setAgendaPreview(null);
+    setMeetingSaveMessage("");
   }
 
   function addMeetingItem() {
@@ -215,6 +303,7 @@ export default function App() {
       meetingItems: [...current.meetingItems, ""]
     }));
     setAgendaPreview(null);
+    setMeetingSaveMessage("");
   }
 
   function removeMeetingItem(index) {
@@ -223,6 +312,7 @@ export default function App() {
       meetingItems: current.meetingItems.filter((_, itemIndex) => itemIndex !== index)
     }));
     setAgendaPreview(null);
+    setMeetingSaveMessage("");
   }
 
   function moveMeetingItem(index, direction) {
@@ -238,6 +328,7 @@ export default function App() {
       return { ...current, meetingItems };
     });
     setAgendaPreview(null);
+    setMeetingSaveMessage("");
   }
 
   function resetStandardAgenda() {
@@ -250,6 +341,7 @@ export default function App() {
       afterMeetingItems: [...agendaTemplate.afterMeetingItems]
     }));
     setAgendaPreview(null);
+    setMeetingSaveMessage("");
   }
 
   async function createAgenda() {
@@ -333,6 +425,13 @@ export default function App() {
               selectedCalendarId={selectedCalendarId}
               sending={sending}
               createdEvent={createdEvent}
+              currentMeetingId={currentMeetingId}
+              meetingStatus={meetingStatus}
+              updateMeetingStatus={updateMeetingStatus}
+              saveCurrentMeeting={saveCurrentMeeting}
+              savingMeeting={savingMeeting}
+              meetingSaveMessage={meetingSaveMessage}
+              startNewMeeting={startNewMeeting}
             />
           }
         />
@@ -353,6 +452,10 @@ export default function App() {
               downloadAgenda={downloadAgenda}
               downloadAgendaPdf={downloadAgendaPdf}
               errors={errors}
+              currentMeetingId={currentMeetingId}
+              saveCurrentMeeting={saveCurrentMeeting}
+              savingMeeting={savingMeeting}
+              meetingSaveMessage={meetingSaveMessage}
             />
           }
         />
@@ -385,6 +488,15 @@ export default function App() {
       </Routes>
     </AppShell>
   );
+}
+
+function loadWorkspace() {
+  try {
+    const value = window.sessionStorage.getItem(WORKSPACE_KEY);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
 }
 
 function downloadBlob(blob, filename) {
@@ -428,15 +540,20 @@ function Dashboard({ organisationName, googleStatus, selectedCalendarId }) {
       />
 
       <div className="dashboard-grid">
+        <Link className="dashboard-card" to="/meetings">
+          <span className="card-kicker">Möten</span>
+          <h2>Mötesarkiv</h2>
+          <p>Öppna tidigare och kommande sparade möten och fortsätt arbetet där du slutade.</p>
+        </Link>
         <Link className="dashboard-card" to="/meetings/new">
           <span className="card-kicker">Möten</span>
-          <h2>Nytt styrelsemöte</h2>
-          <p>Ange datum, tid och plats, kontrollera deltagare och skapa kalenderinbjudan.</p>
+          <h2>Styrelsemöte</h2>
+          <p>Ange datum, tid och plats, spara mötet, kontrollera deltagare och skapa kalenderinbjudan.</p>
         </Link>
         <Link className="dashboard-card" to="/agenda">
           <span className="card-kicker">Möten</span>
           <h2>Dagordning</h2>
-          <p>Lägg till mötesspecifika punkter, förhandsgranska och exportera till Markdown eller PDF.</p>
+          <p>Lägg till mötesspecifika punkter, spara dem med mötet och exportera till Markdown eller PDF.</p>
         </Link>
         <Link className="dashboard-card" to="/admin/agenda">
           <span className="card-kicker">Administration</span>
@@ -516,15 +633,29 @@ function MeetingPage({
   googleStatus,
   selectedCalendarId,
   sending,
-  createdEvent
+  createdEvent,
+  currentMeetingId,
+  meetingStatus,
+  updateMeetingStatus,
+  saveCurrentMeeting,
+  savingMeeting,
+  meetingSaveMessage,
+  startNewMeeting
 }) {
   return (
     <>
       <PageHeading
         eyebrow="Möten"
         title="Styrelsemöte"
-        text="Ange mötesuppgifterna och förhandsgranska innan kalenderinbjudan skapas. Uppgifterna används också av dagordningen."
+        text="Ange mötesuppgifterna, spara mötet i arkivet och förhandsgranska innan kalenderinbjudan skapas. Uppgifterna används också av dagordningen."
       />
+
+      {currentMeetingId && (
+        <div className="saved-meeting-context">
+          Du arbetar med ett sparat möte. <Link to={`/meetings/${currentMeetingId}`}>Öppna mötet i arkivet</Link>.
+        </div>
+      )}
+
       <section className="card">
         <form onSubmit={handleMeetingPreview} className="form">
           <label>
@@ -547,6 +678,22 @@ function MeetingPage({
           </label>
           <button type="submit">Förhandsgranska möte</button>
         </form>
+
+        <div className="meeting-save-bar">
+          <label>
+            Status
+            <select value={meetingStatus} onChange={updateMeetingStatus}>
+              <option value="planned">Planerat</option>
+              <option value="completed">Genomfört</option>
+              <option value="cancelled">Inställt</option>
+            </select>
+          </label>
+          <button type="button" onClick={saveCurrentMeeting} disabled={savingMeeting}>
+            {savingMeeting ? "Sparar…" : currentMeetingId ? "Spara ändringar" : "Spara mötet"}
+          </button>
+          <button type="button" className="secondary" onClick={startNewMeeting}>Nytt tomt möte</button>
+          {meetingSaveMessage && <p className="meeting-save-message">{meetingSaveMessage}</p>}
+        </div>
         <ErrorList errors={errors} />
       </section>
 
@@ -625,7 +772,11 @@ function AgendaPage({
   agendaPreview,
   downloadAgenda,
   downloadAgendaPdf,
-  errors
+  errors,
+  currentMeetingId,
+  saveCurrentMeeting,
+  savingMeeting,
+  meetingSaveMessage
 }) {
   const beforeCount = agendaDraft.beforeMeetingItems.length;
   const meetingCount = agendaDraft.meetingItems.length;
@@ -637,6 +788,12 @@ function AgendaPage({
         title="Dagordning"
         text="Standardpunkterna kan ändras för det aktuella mötet. Mötesspecifika ärenden placeras mellan standardblocken och numreras automatiskt."
       />
+
+      {currentMeetingId && (
+        <div className="saved-meeting-context">
+          Dagordningen hör till det sparade mötet. <Link to={`/meetings/${currentMeetingId}`}>Öppna mötet i arkivet</Link>.
+        </div>
+      )}
 
       {!form.date && (
         <div className="notice card">
@@ -703,7 +860,11 @@ function AgendaPage({
         <div className="agenda-actions">
           <button type="button" onClick={createAgenda}>Förhandsgranska dagordning</button>
           <button type="button" className="secondary" onClick={resetStandardAgenda}>Återställ standardpunkter</button>
+          <button type="button" className="secondary" onClick={saveCurrentMeeting} disabled={savingMeeting || !form.date}>
+            {savingMeeting ? "Sparar…" : currentMeetingId ? "Spara möte och dagordning" : "Spara som nytt möte"}
+          </button>
         </div>
+        {meetingSaveMessage && <p className="meeting-save-message">{meetingSaveMessage}</p>}
         <ErrorList errors={errors} />
       </section>
 
