@@ -1,6 +1,11 @@
 import express from "express";
 import { loadConfig } from "./config/load-config.mjs";
-import { loadBoard } from "./config/load-board.mjs";
+import {
+  loadActiveBoard,
+  loadBoardHistory,
+  loadBoardState,
+  saveBoardState
+} from "./board/board-store.mjs";
 import { createMeetingPreview } from "./meetings/preview.mjs";
 import { renderTemplate } from "./templates/render.mjs";
 import { createAgendaPreview, loadAgendaTemplate } from "./agenda/agenda.mjs";
@@ -33,7 +38,6 @@ const port = Number(process.env.PORT || 3001);
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const config = await loadConfig();
-const board = await loadBoard();
 const factoryAgendaTemplate = await loadAgendaTemplate();
 
 app.use(express.json());
@@ -46,8 +50,38 @@ app.get("/api/config", (_req, res) => {
   res.json(config);
 });
 
-app.get("/api/board", (_req, res) => {
-  res.json(board);
+app.get("/api/board", async (_req, res) => {
+  try {
+    res.json(await loadActiveBoard());
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.get("/api/admin/board", async (_req, res) => {
+  try {
+    const [board, history] = await Promise.all([
+      loadBoardState(),
+      loadBoardHistory()
+    ]);
+
+    res.json({ ok: true, board, history });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.put("/api/admin/board", async (req, res) => {
+  try {
+    const board = await saveBoardState({ members: req.body?.members });
+    res.json({
+      ok: true,
+      board,
+      history: await loadBoardHistory()
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
 });
 
 app.get("/api/agenda/template", async (_req, res) => {
@@ -266,6 +300,7 @@ app.post("/api/google/calendar/events", async (req, res) => {
       "templates/calendar/styrelsemote.txt",
       result.meeting
     );
+    const board = await loadActiveBoard();
 
     const meeting = {
       ...result.meeting,
@@ -295,6 +330,7 @@ app.post("/api/meetings/preview", async (req, res) => {
       "templates/calendar/styrelsemote.txt",
       result.meeting
     );
+    const board = await loadActiveBoard();
 
     res.json({
       ...result,

@@ -52,6 +52,7 @@ export default function AppShell({ organisationName, backendOk, children }) {
           <MenuLink to="/agenda" onNavigate={closeMenu}>Dagordning</MenuLink>
 
           <p className="nav-heading">Administration</p>
+          <MenuLink to="/admin/board" onNavigate={closeMenu}>Styrelse</MenuLink>
           <MenuLink to="/admin/agenda" onNavigate={closeMenu}>Dagordningsmall</MenuLink>
           <MenuLink to="/admin/google" onNavigate={closeMenu}>Google Calendar</MenuLink>
         </nav>
