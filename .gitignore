@@ -19,6 +19,7 @@ credentials.json
 data/*
 !data/.gitkeep
 backups/
+runtime/
 *.db
 *.db-shm
 *.db-wal

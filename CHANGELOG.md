@@ -1,5 +1,18 @@
 # Changelog
 
+## Sprint 12 – Docker och produktionsdrift
+
+- Multi-stage `Dockerfile` bygger React-frontenden och kör backend + frontend i en enda container.
+- Express serverar den färdigbyggda frontenden i produktion, inklusive SPA-fallback för React Router.
+- `compose.yaml` startar Föreningsadmin med persistent state utanför containern.
+- Allt muterbart runtime-innehåll ligger under `/var/lib/foreningsadmin` i containern och kan bind-mountas från värden.
+- `data/`, Google OAuth-token, restore-backuper, temporär restore-data och äldre `config/board.json` kan överleva containerbyte.
+- `.env` läses från värdens `runtime/.env` och bakas aldrig in i imagen.
+- `.dockerignore` blockerar lokala data, tokens, hemligheter och `config/board.json` från Docker build context.
+- Backup/restore använder samma externa state-filsystem så atomiska rename-operationer fungerar även i Docker.
+- Imagen kör applikationen som icke-root-användaren `node` och har Docker healthcheck mot `/api/health`.
+- Produktions- och migreringsflödet dokumenteras i `docs/docker.md`.
+
 ## Sprint 11 – Backup och återställning
 
 - Ny sida **Administration → Backup**.

@@ -9,14 +9,13 @@ import {
   writeFile
 } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(currentDir, "../../..");
-const dataDir = path.join(projectRoot, "data");
-const legacyBoardFile = path.join(projectRoot, "config", "board.json");
-const backupsDir = path.join(projectRoot, "backups");
-const tempDir = path.join(projectRoot, ".tmp");
+import {
+  backupsDir,
+  dataDir,
+  legacyBoardFile,
+  stateRoot,
+  tempDir
+} from "../runtime/paths.mjs";
 
 export const BACKUP_FORMAT = "foreningsadmin-backup";
 export const BACKUP_VERSION = 1;
@@ -67,7 +66,7 @@ async function walkFiles(directory, root = directory) {
 }
 
 async function sourceFiles() {
-  const files = (await walkFiles(dataDir, projectRoot)).map((file) => ({
+  const files = (await walkFiles(dataDir, stateRoot)).map((file) => ({
     fullPath: file.fullPath,
     relativePath: file.relativePath
   }));
@@ -196,7 +195,8 @@ export async function restoreBackupDocument(document) {
       await writeFile(destination, file.buffer);
     }
 
-    // data/.gitkeep is tracked in Git and should remain present after a restore.
+    // Keep an empty marker so the data directory also survives a restore that
+    // contains no ordinary data files.
     await writeFile(path.join(stagingData, ".gitkeep"), "", "utf8");
 
     await mkdir(backupsDir, { recursive: true });
