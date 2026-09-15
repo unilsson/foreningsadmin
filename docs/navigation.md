@@ -1,6 +1,6 @@
 # Navigation och appskal
 
-Sprint 5 delar upp Föreningsadmin i separata arbetsytor med en permanent vänstermeny på större skärmar och en infällbar meny på mindre skärmar. Sprint 7 utökar mötesdelen med ett permanent mötesarkiv.
+Sprint 5 delar upp Föreningsadmin i separata arbetsytor med en permanent vänstermeny på större skärmar och en infällbar meny på mindre skärmar. Sprint 7 utökar mötesdelen med ett permanent mötesarkiv och Sprint 9 lägger till åtgärdslistan som en egen arbetsyta.
 
 ## Routes
 
@@ -10,6 +10,7 @@ Sprint 5 delar upp Föreningsadmin i separata arbetsytor med en permanent vänst
 /meetings/:meetingId    Sparat möte
 /meetings/new           Styrelsemöte / aktuell arbetsyta
 /agenda                 Dagordning för aktuell arbetsyta
+/actions                Åtgärdslista
 /admin/board            Administration av styrelsen
 /admin/agenda           Administration av standardmall för dagordning
 /admin/google           Google Calendar-konfiguration
@@ -19,11 +20,13 @@ Frontend använder React Router. Menyn använder riktiga URL:er så att sidor ka
 
 ## Ansvar mellan sidorna
 
-**Mötesarkiv** listar sparade styrelsemöten och visar deras datum, tid, plats och status. Ett möte kan öppnas för att se den sparade dagordningen och fortsätta redigeringen.
+**Mötesarkiv** listar sparade styrelsemöten och visar deras datum, tid, plats och status. Ett möte kan öppnas för att se den sparade dagordningen, dokument och fortsätta redigeringen.
 
 **Styrelsemöte** innehåller datum, tider, plats, status, lagring i mötesarkivet, deltagare, mötesförhandsgranskning och skapande av kalenderinbjudan.
 
 **Dagordning** innehåller redigering av dagordningen för det aktuella mötet samt export till Markdown och PDF. Om arbetsytan kommer från ett sparat möte sparas dagordningen tillbaka till samma mötesobjekt.
+
+**Åtgärdslista** innehåller föreningens pågående och avslutade åtgärdspunkter. Punkter kan kopplas till ett sparat möte och exporteras till Markdown eller PDF.
 
 **Styrelse** innehåller administration av namn, e-postadress, roll, aktiv/inaktiv-status och ordning för styrelsens personer. Den aktiva listan används direkt av mötes- och kalenderfunktionerna.
 
@@ -41,4 +44,4 @@ På desktop är vänstermenyn permanent synlig. På mindre skärmar döljs den b
 
 ## Drift
 
-Vite hanterar history fallback under lokal utveckling. Vid framtida produktion bakom en webbserver måste okända frontend-routes skickas till `index.html`, så att direktlänkar som `/meetings/<uuid>`, `/admin/board` och `/admin/agenda` kan öppnas direkt.
+Vite hanterar history fallback under lokal utveckling. Vid framtida produktion bakom en webbserver måste okända frontend-routes skickas till `index.html`, så att direktlänkar som `/meetings/<uuid>`, `/actions`, `/admin/board` och `/admin/agenda` kan öppnas direkt.
