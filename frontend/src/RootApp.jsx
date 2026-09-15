@@ -3,18 +3,28 @@ import { useLocation } from "react-router-dom";
 import App from "./App.jsx";
 import AppShell from "./AppShell.jsx";
 import BoardAdmin from "./BoardAdmin.jsx";
+import { MeetingArchive, MeetingDetail } from "./MeetingArchive.jsx";
 
 export default function RootApp() {
   const location = useLocation();
 
-  if (location.pathname !== "/admin/board") {
-    return <App />;
+  if (location.pathname === "/admin/board") {
+    return <ShellRoute eyebrow="Administration" title="Styrelse" text="Hantera vilka personer som sitter i styrelsen och vilka som ska få kalenderinbjudningar till styrelsemöten."><BoardAdmin /></ShellRoute>;
   }
 
-  return <BoardAdminRoute />;
+  if (location.pathname === "/meetings") {
+    return <ShellRoute><MeetingArchive /></ShellRoute>;
+  }
+
+  const meetingMatch = location.pathname.match(/^\/meetings\/([0-9a-f-]{36})$/i);
+  if (meetingMatch) {
+    return <ShellRoute><MeetingDetail meetingId={meetingMatch[1]} /></ShellRoute>;
+  }
+
+  return <App />;
 }
 
-function BoardAdminRoute() {
+function ShellRoute({ eyebrow, title, text, children }) {
   const [organisationName, setOrganisationName] = useState("Förening");
   const [backendOk, setBackendOk] = useState(null);
 
@@ -39,14 +49,14 @@ function BoardAdminRoute() {
 
   return (
     <AppShell organisationName={organisationName} backendOk={backendOk}>
-      <header className="page-heading">
-        <p className="eyebrow">Administration</p>
-        <h1>Styrelse</h1>
-        <p>
-          Hantera vilka personer som sitter i styrelsen och vilka som ska få kalenderinbjudningar till styrelsemöten.
-        </p>
-      </header>
-      <BoardAdmin />
+      {title && (
+        <header className="page-heading">
+          {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+          <h1>{title}</h1>
+          {text && <p>{text}</p>}
+        </header>
+      )}
+      {children}
     </AppShell>
   );
 }

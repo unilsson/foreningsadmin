@@ -6,6 +6,7 @@ import "./styles.css";
 import "./admin.css";
 import "./shell.css";
 import "./board-admin.css";
+import "./meeting-archive.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

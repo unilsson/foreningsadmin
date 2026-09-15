@@ -7,6 +7,7 @@ import {
   saveBoardState
 } from "./board/board-store.mjs";
 import { createMeetingPreview } from "./meetings/preview.mjs";
+import { createMeetingArchiveRouter } from "./meetings/archive-router.mjs";
 import { renderTemplate } from "./templates/render.mjs";
 import { createAgendaPreview, loadAgendaTemplate } from "./agenda/agenda.mjs";
 import { streamAgendaPdf } from "./agenda/pdf.mjs";
@@ -41,6 +42,7 @@ const config = await loadConfig();
 const factoryAgendaTemplate = await loadAgendaTemplate();
 
 app.use(express.json());
+app.use("/api/saved-meetings", createMeetingArchiveRouter(config));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "foreningsadmin-backend" });

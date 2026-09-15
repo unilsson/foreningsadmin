@@ -1,6 +1,6 @@
 # Konfiguration
 
-Föreningsadmin skiljer på programstandard, lokal föreningskonfiguration och hemligheter.
+Föreningsadmin skiljer på programstandard, lokal föreningsdata och hemligheter.
 
 ## Programstandard
 
@@ -16,9 +16,9 @@ config/board.example.json
 
 De här filerna versionshanteras i Git.
 
-## Lokal föreningskonfiguration
+## Lokal föreningsdata
 
-Inställningar som ska kunna ändras från appen eller som bara gäller en viss installation sparas lokalt under:
+Inställningar och arbetsdata som ska kunna ändras från appen eller som bara gäller en viss installation sparas lokalt under:
 
 ```text
 data/
@@ -26,27 +26,24 @@ data/
 
 Hela `data/*` ignoreras av Git, med undantag för `data/.gitkeep`.
 
-Sprint 4 använder:
+Aktuella lokala filer och kataloger är:
 
 ```text
 data/agenda.json
-
 data/agenda-history.jsonl
+data/board.json
+data/board-history.jsonl
+data/google-calendar.json
+data/meetings/
 ```
 
 `data/agenda.json` innehåller den aktiva dagordningsmallen när någon har ändrat den via webbappen. Om filen saknas används `config/agenda.json`.
 
-`data/agenda-history.jsonl` innehåller den lokala ändringshistoriken för dagordningsmallen.
+`data/board.json` innehåller den aktiva styrelsen. En äldre lokal `config/board.json` kan fortfarande användas som fallback tills styrelsen har sparats från administrationssidan.
 
-## Styrelseuppgifter
+`data/meetings/` innehåller ett separat JSON-dokument per sparat styrelsemöte.
 
-Riktiga styrelseuppgifter ligger fortfarande i:
-
-```text
-config/board.json
-```
-
-Den filen ignoreras av Git. En publik exempelversion finns i `config/board.example.json`.
+Historikfilerna `data/agenda-history.jsonl` och `data/board-history.jsonl` är lokala ändringsloggar.
 
 ## Hemligheter
 
@@ -71,8 +68,18 @@ data/agenda.json      # aktiv lokal mall, om den finns
 config/agenda.json    # programmets standardmall
 ```
 
-Samma princip kan återanvändas i kommande sprintar för andra inställningar som ska kunna administreras från webbappen.
+För styrelsen gäller:
+
+```text
+data/board.json       # aktiv styrelse
+        ↓ fallback
+config/board.json     # äldre lokal installation, om filen finns
+```
+
+`config/board.example.json` är bara ett publikt exempel och ska aldrig innehålla riktiga kontaktuppgifter.
 
 ## Backup
 
-Eftersom lokal konfiguration under `data/` inte finns i Git bör installationens data tas med i vanlig lokal backup. GitHub-repot räcker alltså inte som backup av den aktiva föreningskonfigurationen.
+Eftersom lokal föreningsdata under `data/` inte finns i Git måste installationens `data/` tas med i vanlig lokal backup. GitHub-repot räcker alltså inte som backup av mötesarkiv, styrelseuppgifter eller aktiva inställningar.
+
+OAuth-token ligger separat under `tokens/` och ska hanteras som en hemlighet i backup och återställning.
