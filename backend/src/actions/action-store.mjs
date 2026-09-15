@@ -94,25 +94,29 @@ function assertUniqueNumber(items, number, excludedId = null) {
   if (duplicate) throw new Error(`Åtgärdsnummer ${number} används redan.`);
 }
 
+function valueOrPrevious(input, key, previous) {
+  return Object.prototype.hasOwnProperty.call(input ?? {}, key) ? input[key] : previous?.[key];
+}
+
 function normalizeInput(input, previous = null) {
-  const title = cleanText(input?.title ?? previous?.title);
+  const title = cleanText(valueOrPrevious(input, "title", previous));
   if (!title) throw new Error("Åtgärden måste ha en beskrivning.");
 
-  const status = cleanStatus(input?.status ?? previous?.status);
+  const status = cleanStatus(valueOrPrevious(input, "status", previous));
   const now = new Date().toISOString();
   let completedAt = previous?.completedAt ?? null;
   if (status === "completed" && !completedAt) completedAt = now;
   if (status !== "completed") completedAt = null;
 
   return {
-    number: cleanText(input?.number ?? previous?.number),
+    number: cleanText(valueOrPrevious(input, "number", previous)),
     title,
-    responsible: cleanResponsible(input?.responsible ?? previous?.responsible),
-    decided: cleanText(input?.decided ?? previous?.decided),
-    meetingId: cleanMeetingId(input?.meetingId ?? previous?.meetingId),
-    dueDate: cleanDate(input?.dueDate ?? previous?.dueDate),
+    responsible: cleanResponsible(valueOrPrevious(input, "responsible", previous)),
+    decided: cleanText(valueOrPrevious(input, "decided", previous)),
+    meetingId: cleanMeetingId(valueOrPrevious(input, "meetingId", previous)),
+    dueDate: cleanDate(valueOrPrevious(input, "dueDate", previous)),
     status,
-    comment: cleanText(input?.comment ?? previous?.comment),
+    comment: cleanText(valueOrPrevious(input, "comment", previous)),
     completedAt
   };
 }
