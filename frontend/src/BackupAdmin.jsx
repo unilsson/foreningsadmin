@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
@@ -15,6 +15,7 @@ function formatDate(value) {
 }
 
 export default function BackupAdmin() {
+  const fileInputRef = useRef(null);
   const [status, setStatus] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [backupInfo, setBackupInfo] = useState(null);
@@ -39,7 +40,7 @@ export default function BackupAdmin() {
   }, []);
 
   const canRestore = useMemo(
-    () => backupInfo?.format === "foreningsadmin-backup" && backupInfo?.version === 1,
+    () => backupInfo?.format === "foreningsadmin-backup" && backupInfo?.version === 1 && backupInfo?.scope === "local-data",
     [backupInfo]
   );
 
@@ -56,10 +57,12 @@ export default function BackupAdmin() {
       const parsed = JSON.parse(await file.text());
       if (parsed.format !== "foreningsadmin-backup") throw new Error("Filen är inte en Föreningsadmin-backup.");
       if (parsed.version !== 1) throw new Error(`Backupversion ${parsed.version ?? "okänd"} stöds inte.`);
+      if (parsed.scope !== "local-data") throw new Error("Backupfilen har ett dataomfång som inte stöds.");
       if (!Array.isArray(parsed.files)) throw new Error("Backupfilen saknar fillista.");
       setBackupInfo({
         format: parsed.format,
         version: parsed.version,
+        scope: parsed.scope,
         createdAt: parsed.createdAt,
         fileCount: parsed.fileCount ?? parsed.files.length,
         totalBytes: parsed.totalBytes ?? null
@@ -76,7 +79,7 @@ export default function BackupAdmin() {
   async function restoreBackup() {
     if (!selectedFile || !canRestore) return;
     const confirmed = window.confirm(
-      "Återställa denna backup? Nuvarande data ersätts. Föreningsadmin sparar automatiskt den nuvarande data-katalogen som en säkerhetskopia på servern innan återställningen."
+      "Återställa denna backup? Nuvarande lokala data ersätts. Föreningsadmin sparar automatiskt nuvarande data som en säkerhetskopia på servern innan återställningen."
     );
     if (!confirmed) return;
 
@@ -97,6 +100,7 @@ export default function BackupAdmin() {
       );
       setSelectedFile(null);
       setBackupInfo(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       await loadStatus();
     } catch (restoreError) {
       setError(restoreError.message);
@@ -121,7 +125,7 @@ export default function BackupAdmin() {
           <div>
             <p className="eyebrow">Backup</p>
             <h2>Hämta all appdata</h2>
-            <p>Backupen innehåller hela <code>data/</code>, inklusive möten, protokoll och andra mötesdokument, styrelse, dagordningsmall, åtgärdslista, kalendarium och lokala historikfiler.</p>
+            <p>Backupen innehåller hela <code>data/</code>, inklusive möten, protokoll och andra mötesdokument, styrelse, dagordningsmall, åtgärdslista, kalendarium och lokala historikfiler. Äldre lokal <code>config/board.json</code> tas också med om den används.</p>
           </div>
 
           <dl className="backup-summary">
@@ -143,7 +147,7 @@ export default function BackupAdmin() {
 
           <label className="backup-file-field">
             Backupfil
-            <input type="file" accept=".json,application/json" onChange={chooseFile} disabled={reading || restoring} />
+            <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={chooseFile} disabled={reading || restoring} />
           </label>
 
           {reading && <p className="muted">Kontrollerar backupfilen…</p>}
@@ -160,7 +164,7 @@ export default function BackupAdmin() {
             {restoring ? "Återställer…" : "Återställ backup"}
           </button>
 
-          <p className="backup-warning"><strong>Observera:</strong> återställning ersätter nuvarande <code>data/</code>. Innan dess flyttas nuvarande data automatiskt till <code>backups/pre-restore-…</code>.</p>
+          <p className="backup-warning"><strong>Observera:</strong> återställning ersätter nuvarande lokala data. Innan dess flyttas nuvarande data automatiskt till <code>backups/pre-restore-…</code>.</p>
         </section>
       </div>
     </>
