@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 
+function createMemberId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `member-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function newMember() {
   return {
-    id: crypto.randomUUID(),
+    id: createMemberId(),
     name: "",
     email: "",
     role: "Ledamot",
@@ -31,7 +39,10 @@ export default function BoardAdmin() {
     try {
       const response = await fetch("/api/admin/board");
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Kunde inte läsa styrelsen.");
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Kunde inte läsa styrelsen.");
+      }
 
       setMembers(data.board?.members ?? []);
       setSource(data.board?.source ?? "empty");
@@ -50,9 +61,12 @@ export default function BoardAdmin() {
   function updateMember(id, field, value) {
     setMembers((current) =>
       current.map((member) =>
-        member.id === id ? { ...member, [field]: value } : member
+        member.id === id
+          ? { ...member, [field]: value }
+          : member
       )
     );
+
     setMessage("");
   }
 
@@ -64,12 +78,21 @@ export default function BoardAdmin() {
   function moveMember(index, direction) {
     setMembers((current) => {
       const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= current.length) return current;
+
+      if (targetIndex < 0 || targetIndex >= current.length) {
+        return current;
+      }
 
       const next = [...current];
-      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+
+      [next[index], next[targetIndex]] = [
+        next[targetIndex],
+        next[index]
+      ];
+
       return next;
     });
+
     setMessage("");
   }
 
@@ -81,16 +104,25 @@ export default function BoardAdmin() {
     try {
       const response = await fetch("/api/admin/board", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ members })
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Kunde inte spara styrelsen.");
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Kunde inte spara styrelsen.");
+      }
 
       setMembers(data.board?.members ?? []);
       setSource(data.board?.source ?? "local");
       setHistory(data.history ?? []);
-      setMessage("Styrelsen är sparad. Ändringarna används direkt i mötesförhandsgranskning och kalenderinbjudningar.");
+
+      setMessage(
+        "Styrelsen är sparad. Ändringarna används direkt i mötesförhandsgranskning och kalenderinbjudningar."
+      );
     } catch (saveError) {
       setError(saveError.message);
     } finally {
@@ -99,7 +131,11 @@ export default function BoardAdmin() {
   }
 
   if (loading) {
-    return <section className="card"><p>Hämtar styrelsen…</p></section>;
+    return (
+      <section className="card">
+        <p>Hämtar styrelsen…</p>
+      </section>
+    );
   }
 
   return (
@@ -109,12 +145,15 @@ export default function BoardAdmin() {
           <span className="board-stat">{members.length}</span>
           <span>personer totalt</span>
         </div>
+
         <div>
           <span className="board-stat">{activeCount}</span>
           <span>aktiva kalenderdeltagare</span>
         </div>
+
         <div>
           <span className="board-source-label">Datakälla</span>
+
           <strong>
             {source === "local"
               ? "data/board.json"
@@ -128,8 +167,11 @@ export default function BoardAdmin() {
       {source === "legacy" && (
         <section className="notice-card">
           <strong>Äldre styrelsefil används.</strong>
+
           <p>
-            När du sparar här skapas <code>data/board.json</code>. Därefter används den filen automatiskt och ingen omstart av backend behövs.
+            När du sparar här skapas <code>data/board.json</code>.
+            Därefter används den filen automatiskt och ingen omstart
+            av backend behövs.
           </p>
         </section>
       )}
@@ -138,26 +180,47 @@ export default function BoardAdmin() {
         <div className="board-toolbar">
           <div>
             <h2>Styrelsemedlemmar</h2>
+
             <p className="muted">
-              Aktiva personer används som deltagare när kalenderinbjudningar skapas. Behåll tidigare ledamöter som inaktiva i stället för att radera dem.
+              Aktiva personer används som deltagare när
+              kalenderinbjudningar skapas. Behåll tidigare ledamöter
+              som inaktiva i stället för att radera dem.
             </p>
           </div>
-          <button type="button" className="secondary" onClick={addMember}>
+
+          <button
+            type="button"
+            className="secondary"
+            onClick={addMember}
+          >
             + Lägg till person
           </button>
         </div>
 
         <div className="board-member-list">
           {members.map((member, index) => (
-            <article className={`board-member${member.active ? "" : " inactive"}`} key={member.id}>
+            <article
+              className={`board-member${member.active ? "" : " inactive"}`}
+              key={member.id}
+            >
               <div className="board-member-header">
-                <strong>{member.name || "Ny styrelsemedlem"}</strong>
+                <strong>
+                  {member.name || "Ny styrelsemedlem"}
+                </strong>
+
                 <label className="active-toggle">
                   <input
                     type="checkbox"
                     checked={member.active}
-                    onChange={(event) => updateMember(member.id, "active", event.target.checked)}
+                    onChange={(event) =>
+                      updateMember(
+                        member.id,
+                        "active",
+                        event.target.checked
+                      )
+                    }
                   />
+
                   Aktiv
                 </label>
               </div>
@@ -165,24 +228,47 @@ export default function BoardAdmin() {
               <div className="board-fields">
                 <label>
                   Namn
+
                   <input
                     value={member.name}
-                    onChange={(event) => updateMember(member.id, "name", event.target.value)}
+                    onChange={(event) =>
+                      updateMember(
+                        member.id,
+                        "name",
+                        event.target.value
+                      )
+                    }
                   />
                 </label>
+
                 <label>
                   Roll
+
                   <input
                     value={member.role}
-                    onChange={(event) => updateMember(member.id, "role", event.target.value)}
+                    onChange={(event) =>
+                      updateMember(
+                        member.id,
+                        "role",
+                        event.target.value
+                      )
+                    }
                   />
                 </label>
+
                 <label className="board-email-field">
                   E-post
+
                   <input
                     type="email"
                     value={member.email}
-                    onChange={(event) => updateMember(member.id, "email", event.target.value)}
+                    onChange={(event) =>
+                      updateMember(
+                        member.id,
+                        "email",
+                        event.target.value
+                      )
+                    }
                   />
                 </label>
               </div>
@@ -196,6 +282,7 @@ export default function BoardAdmin() {
                 >
                   ↑ Flytta upp
                 </button>
+
                 <button
                   type="button"
                   className="secondary small"
@@ -204,40 +291,77 @@ export default function BoardAdmin() {
                 >
                   ↓ Flytta ned
                 </button>
-                <span className="member-id">ID: {member.id}</span>
+
+                <span className="member-id">
+                  ID: {member.id}
+                </span>
               </div>
             </article>
           ))}
         </div>
 
         {members.length === 0 && (
-          <p className="muted">Ingen styrelse finns ännu. Lägg till den första personen ovan.</p>
+          <p className="muted">
+            Ingen styrelse finns ännu. Lägg till den första personen
+            ovan.
+          </p>
         )}
 
         <div className="board-save-row">
-          <button type="button" onClick={saveBoard} disabled={saving}>
+          <button
+            type="button"
+            onClick={saveBoard}
+            disabled={saving}
+          >
             {saving ? "Sparar…" : "Spara styrelsen"}
           </button>
-          {message && <p className="admin-message">{message}</p>}
+
+          {message && (
+            <p className="admin-message">
+              {message}
+            </p>
+          )}
         </div>
-        {error && <div className="errors" role="alert">{error}</div>}
+
+        {error && (
+          <div className="errors" role="alert">
+            {error}
+          </div>
+        )}
       </section>
 
       <section className="card">
         <details className="history-panel">
-          <summary>Ändringshistorik ({history.length})</summary>
+          <summary>
+            Ändringshistorik ({history.length})
+          </summary>
+
           {history.length === 0 ? (
-            <p className="muted">Inga ändringar har sparats genom administrationssidan ännu.</p>
+            <p className="muted">
+              Inga ändringar har sparats genom administrationssidan
+              ännu.
+            </p>
           ) : (
             <div className="history-list">
               {history.map((entry, index) => (
-                <article className="history-entry" key={`${entry.timestamp}-${index}`}>
+                <article
+                  className="history-entry"
+                  key={`${entry.timestamp}-${index}`}
+                >
                   <strong>Styrelsen sparades</strong>
+
                   <time dateTime={entry.timestamp}>
-                    {new Date(entry.timestamp).toLocaleString("sv-SE")}
+                    {new Date(
+                      entry.timestamp
+                    ).toLocaleString("sv-SE")}
                   </time>
+
                   <ul>
-                    {(entry.changes ?? []).map((change) => <li key={change}>{change}</li>)}
+                    {(entry.changes ?? []).map((change) => (
+                      <li key={change}>
+                        {change}
+                      </li>
+                    ))}
                   </ul>
                 </article>
               ))}
